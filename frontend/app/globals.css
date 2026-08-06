@@ -44,6 +44,13 @@ body {
   margin: 0 0 1.25rem;
 }
 
+.nda-document h1,
+.nda-document h2,
+.nda-document h3 {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
 .nda-document h2 {
   font-size: 1rem;
   font-weight: 700;
@@ -71,6 +78,8 @@ body {
 .nda-document ol li {
   margin-bottom: 0.6rem;
   text-align: justify;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .nda-document ul {
@@ -81,6 +90,8 @@ body {
 
 .nda-document ul li {
   margin-bottom: 0.3rem;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .nda-document ul li input[type="checkbox"] {
@@ -98,6 +109,16 @@ body {
   border-collapse: collapse;
   margin: 0.75rem 0 1.25rem;
   font-size: 0.85rem;
+  /* Keep the whole signature table on one page rather than slicing it
+     mid-row — it's short enough to always fit. `tr` below is a fallback
+     for the (currently hypothetical) case of a table taller than a page. */
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.nda-document tr {
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .nda-document th,
