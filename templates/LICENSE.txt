@@ -1,0 +1,9 @@
+All legal document templates in this directory are sourced from Common Paper
+(https://github.com/CommonPaper) and are used and redistributed here under the
+terms of the Creative Commons Attribution 4.0 International License (CC BY 4.0).
+
+License text: https://creativecommons.org/licenses/by/4.0/
+
+Per Common Paper's own terms: "Common Paper agreements are free to use and
+modify under CC BY 4.0." See catalog.json in the project root for the source
+repository of each template.
