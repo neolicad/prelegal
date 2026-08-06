@@ -1,0 +1,76 @@
+{
+  "templates": [
+    {
+      "name": "Mutual Non-Disclosure Agreement",
+      "description": "Common Paper standard Mutual NDA Standard Terms, allowing two parties to exchange confidential information for a stated purpose.",
+      "filename": "templates/mutual-nda.md",
+      "source": "https://github.com/CommonPaper/Mutual-NDA"
+    },
+    {
+      "name": "Mutual Non-Disclosure Agreement Cover Page",
+      "description": "Cover page used to execute the Common Paper Mutual NDA by filling in party names and deal-specific terms, which incorporates the Standard Terms by reference.",
+      "filename": "templates/mutual-nda-coverpage.md",
+      "source": "https://github.com/CommonPaper/Mutual-NDA"
+    },
+    {
+      "name": "Cloud Service Agreement",
+      "description": "Common Paper standard Cloud Service Agreement Standard Terms for selling and buying cloud software and SaaS products.",
+      "filename": "templates/csa.md",
+      "source": "https://github.com/CommonPaper/CSA"
+    },
+    {
+      "name": "Design Partner Agreement",
+      "description": "Common Paper standard Design Partner Agreement granting early product access to a partner in exchange for feedback.",
+      "filename": "templates/design-partner-agreement.md",
+      "source": "https://github.com/CommonPaper/Design-Partner-Agreement"
+    },
+    {
+      "name": "Service Level Agreement",
+      "description": "Common Paper Service Level Agreement Standard Terms, designed to be used alongside the Cloud Service Agreement to define uptime and response time commitments.",
+      "filename": "templates/sla.md",
+      "source": "https://github.com/CommonPaper/SLA"
+    },
+    {
+      "name": "Professional Services Agreement",
+      "description": "Common Paper standard Professional Services Agreement Standard Terms governing statements of work and deliverables between a provider and customer.",
+      "filename": "templates/psa.md",
+      "source": "https://github.com/CommonPaper/PSA"
+    },
+    {
+      "name": "Data Processing Agreement",
+      "description": "Common Paper Data Processing Agreement Standard Terms governing the processing of personal data between a provider and customer.",
+      "filename": "templates/dpa.md",
+      "source": "https://github.com/CommonPaper/DPA"
+    },
+    {
+      "name": "Software License Agreement",
+      "description": "Common Paper standard Software License Agreement Standard Terms for licensing on-premises or self-hosted software.",
+      "filename": "templates/software-license-agreement.md",
+      "source": "https://github.com/CommonPaper/Software-License-Agreement"
+    },
+    {
+      "name": "Partnership Agreement",
+      "description": "Common Paper standard Partnership Agreement Standard Terms for structuring a business partnership between two companies.",
+      "filename": "templates/partnership-agreement.md",
+      "source": "https://github.com/CommonPaper/Partnership-Agreement"
+    },
+    {
+      "name": "Pilot Agreement",
+      "description": "Common Paper standard Pilot Agreement Standard Terms, a short-term trial or evaluation contract used before committing to a full commercial agreement.",
+      "filename": "templates/pilot-agreement.md",
+      "source": "https://github.com/CommonPaper/Pilot-Agreement"
+    },
+    {
+      "name": "Business Associate Agreement",
+      "description": "Common Paper standard Business Associate Agreement Standard Terms addressing HIPAA obligations between a covered entity and a business associate.",
+      "filename": "templates/baa.md",
+      "source": "https://github.com/CommonPaper/BAA"
+    },
+    {
+      "name": "AI Addendum",
+      "description": "Common Paper standard AI Addendum Standard Terms governing the use of AI features and services as part of a Product.",
+      "filename": "templates/ai-addendum.md",
+      "source": "https://github.com/CommonPaper/AI-Addendum"
+    }
+  ]
+}
