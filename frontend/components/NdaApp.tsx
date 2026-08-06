@@ -5,19 +5,11 @@ import NdaForm from "./NdaForm";
 import NdaPreview from "./NdaPreview";
 import { defaultFormValues, type NdaFormValues } from "@/lib/nda-form";
 import { renderNdaDocument } from "@/lib/render-nda";
+import { slugify } from "@/lib/slugify";
 
 interface NdaAppProps {
   coverPageTemplate: string;
   standardTermsTemplate: string;
-}
-
-function slugify(value: string): string {
-  const slug = value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-  return slug || "mutual-nda";
 }
 
 export default function NdaApp({ coverPageTemplate, standardTermsTemplate }: NdaAppProps) {
