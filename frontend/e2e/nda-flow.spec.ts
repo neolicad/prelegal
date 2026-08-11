@@ -84,22 +84,14 @@ test.describe("Mutual NDA creator", () => {
     }
   });
 
-  test("does not attempt a download when required fields are left blank", async ({ page }) => {
-    let downloadFired = false;
-    page.once("download", () => {
-      downloadFired = true;
-    });
-
+  test("downloads a PDF even when every field is left blank", async ({ page }) => {
+    const downloadPromise = page.waitForEvent("download");
     await page.getByRole("button", { name: "Download PDF" }).click();
-    // Give the (native browser validation) a moment to have fired if it
-    // were going to; there is no download event to await here since none
-    // should occur.
-    await page.waitForTimeout(500);
+    const download = await downloadPromise;
 
-    expect(downloadFired).toBe(false);
-    // The browser's native constraint-validation bubble should point at
-    // the first invalid required field (Effective Date, since Purpose
-    // already has a default value).
-    await expect(page.getByLabel("Effective Date", { exact: true })).toBeFocused();
+    const downloadPath = await download.path();
+    expect(downloadPath).not.toBeNull();
+    const buffer = await fs.readFile(downloadPath!);
+    expect(buffer.subarray(0, 5).toString("latin1")).toBe("%PDF-");
   });
 });

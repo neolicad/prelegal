@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import LogoutButton from "./LogoutButton";
 import NdaForm from "./NdaForm";
 import NdaPreview from "./NdaPreview";
 import { defaultFormValues, type NdaFormValues } from "@/lib/nda-form";
@@ -17,7 +16,6 @@ export default function NdaApp({ coverPageTemplate, standardTermsTemplate }: Nda
   const [values, setValues] = useState<NdaFormValues>(defaultFormValues);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
-  const formRef = useRef<HTMLFormElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
 
   const documentMarkdown = useMemo(
@@ -26,8 +24,7 @@ export default function NdaApp({ coverPageTemplate, standardTermsTemplate }: Nda
   );
 
   async function handleDownload() {
-    if (!formRef.current || !previewRef.current) return;
-    if (!formRef.current.reportValidity()) return;
+    if (!previewRef.current) return;
 
     setIsDownloading(true);
     setDownloadError(null);
@@ -55,25 +52,22 @@ export default function NdaApp({ coverPageTemplate, standardTermsTemplate }: Nda
   return (
     <div className="mx-auto flex min-h-screen max-w-7xl flex-col gap-8 px-4 py-8 lg:flex-row lg:px-8">
       <section className="lg:w-1/2">
-        <header className="mb-6 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-neutral-900">Mutual NDA Creator</h1>
-            <p className="mt-2 text-sm text-neutral-600">
-              Fill in the details below — the document on the right updates as you type. Based on the{" "}
-              <a
-                className="underline underline-offset-2 hover:text-neutral-900"
-                href="https://commonpaper.com/standards/mutual-nda/1.0/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Common Paper Mutual NDA
-              </a>{" "}
-              standard, free to use under CC BY 4.0.
-            </p>
-          </div>
-          <LogoutButton />
+        <header className="mb-6">
+          <h1 className="text-2xl font-semibold text-neutral-900">Mutual NDA Creator</h1>
+          <p className="mt-2 text-sm text-neutral-600">
+            Fill in the details below — the document on the right updates as you type. Based on the{" "}
+            <a
+              className="underline underline-offset-2 hover:text-neutral-900"
+              href="https://commonpaper.com/standards/mutual-nda/1.0/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Common Paper Mutual NDA
+            </a>{" "}
+            standard, free to use under CC BY 4.0.
+          </p>
         </header>
-        <NdaForm ref={formRef} values={values} onChange={setValues} />
+        <NdaForm values={values} onChange={setValues} />
       </section>
 
       <section className="lg:w-1/2">

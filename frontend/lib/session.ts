@@ -8,7 +8,3 @@ const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 export function setSessionCookie() {
   document.cookie = `${SESSION_COOKIE}=1; path=/; max-age=${SESSION_MAX_AGE_SECONDS}`;
 }
-
-export function clearSessionCookie() {
-  document.cookie = `${SESSION_COOKIE}=; path=/; max-age=0`;
-}
