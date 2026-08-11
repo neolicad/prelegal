@@ -26,7 +26,6 @@ export default function NdaForm({ ref, values, onChange }: NdaFormProps) {
       <Section title="Purpose & Effective Date">
         <Field label="Purpose" hint="How Confidential Information may be used">
           <textarea
-            required
             rows={2}
             value={values.purpose}
             onChange={(e) => update("purpose", e.target.value)}
@@ -35,7 +34,6 @@ export default function NdaForm({ ref, values, onChange }: NdaFormProps) {
         </Field>
         <Field label="Effective Date">
           <input
-            required
             type="date"
             value={values.effectiveDate}
             onChange={(e) => update("effectiveDate", e.target.value)}
@@ -71,7 +69,6 @@ export default function NdaForm({ ref, values, onChange }: NdaFormProps) {
       <Section title="Governing Law & Jurisdiction">
         <Field label="Governing Law" hint="State whose laws govern this MNDA">
           <input
-            required
             type="text"
             placeholder="e.g. Delaware"
             value={values.governingLaw}
@@ -81,7 +78,6 @@ export default function NdaForm({ ref, values, onChange }: NdaFormProps) {
         </Field>
         <Field label="Jurisdiction" hint='e.g. "courts located in New Castle, DE"'>
           <input
-            required
             type="text"
             placeholder="courts located in New Castle, DE"
             value={values.jurisdiction}
@@ -165,7 +161,6 @@ function TermField({
         <input
           type="number"
           min={1}
-          required={type === "fixed"}
           value={years}
           onChange={(e) => onYearsChange(e.target.value)}
           className="w-16 rounded-md border border-neutral-300 px-2 py-1 text-sm"
@@ -194,7 +189,6 @@ function PartyFields({
       {PARTY_FIELD_CONFIG.map(({ key, label, hint }) => (
         <Field key={key} label={label} hint={hint}>
           <input
-            required
             type="text"
             value={party[key]}
             onChange={(e) => onChange(key, e.target.value)}

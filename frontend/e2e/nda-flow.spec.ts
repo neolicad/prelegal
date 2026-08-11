@@ -2,12 +2,24 @@ import fs from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import { PDFParse } from "pdf-parse";
 
+test("redirects to the login screen when not signed in", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole("heading", { name: "Sign in to Prelegal" })).toBeVisible();
+});
+
 test.describe("Mutual NDA creator", () => {
-  test("fills the form, updates the live preview, and downloads a real PDF", async ({ page }) => {
-    await page.goto("/");
-
+  test.beforeEach(async ({ page }) => {
+    // No real authentication yet -- any credentials sign you in (PL-7).
+    await page.goto("/login");
+    await page.getByLabel("Email").fill("alice@example.com");
+    await page.getByLabel("Password").fill("hunter2");
+    await page.getByRole("button", { name: "Sign in" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Mutual NDA Creator" })).toBeVisible();
+  });
 
+  test("fills the form, updates the live preview, and downloads a real PDF", async ({ page }) => {
     await page.getByLabel("Effective Date", { exact: true }).fill("2026-08-06");
     await page.getByLabel("Governing Law", { exact: false }).fill("Delaware");
     await page.getByLabel("Jurisdiction", { exact: false }).fill("courts located in New Castle, DE");
@@ -72,24 +84,14 @@ test.describe("Mutual NDA creator", () => {
     }
   });
 
-  test("does not attempt a download when required fields are left blank", async ({ page }) => {
-    await page.goto("/");
-
-    let downloadFired = false;
-    page.once("download", () => {
-      downloadFired = true;
-    });
-
+  test("downloads a PDF even when every field is left blank", async ({ page }) => {
+    const downloadPromise = page.waitForEvent("download");
     await page.getByRole("button", { name: "Download PDF" }).click();
-    // Give the (native browser validation) a moment to have fired if it
-    // were going to; there is no download event to await here since none
-    // should occur.
-    await page.waitForTimeout(500);
+    const download = await downloadPromise;
 
-    expect(downloadFired).toBe(false);
-    // The browser's native constraint-validation bubble should point at
-    // the first invalid required field (Effective Date, since Purpose
-    // already has a default value).
-    await expect(page.getByLabel("Effective Date", { exact: true })).toBeFocused();
+    const downloadPath = await download.path();
+    expect(downloadPath).not.toBeNull();
+    const buffer = await fs.readFile(downloadPath!);
+    expect(buffer.subarray(0, 5).toString("latin1")).toBe("%PDF-");
   });
 });

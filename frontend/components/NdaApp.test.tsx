@@ -75,13 +75,15 @@ describe("NdaApp", () => {
     expect(screen.getByText("Governing Law: Delaware")).toBeInTheDocument();
   });
 
-  it("does not attempt PDF generation when required fields are missing", async () => {
+  it("attempts PDF generation even when every field is left blank", async () => {
+    html2pdfWorker.save.mockResolvedValue(undefined);
     const user = userEvent.setup();
     render(<NdaApp coverPageTemplate={coverPageTemplate} standardTermsTemplate={standardTermsTemplate} />);
 
     await user.click(screen.getByRole("button", { name: "Download PDF" }));
 
-    expect(html2pdfFactory).not.toHaveBeenCalled();
+    await waitFor(() => expect(html2pdfWorker.save).toHaveBeenCalled());
+    expect(html2pdfFactory).toHaveBeenCalled();
   });
 
   it("generates a PDF with a correctly slugified filename once the form is valid", async () => {

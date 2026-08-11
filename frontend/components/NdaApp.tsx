@@ -16,7 +16,6 @@ export default function NdaApp({ coverPageTemplate, standardTermsTemplate }: Nda
   const [values, setValues] = useState<NdaFormValues>(defaultFormValues);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
-  const formRef = useRef<HTMLFormElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
 
   const documentMarkdown = useMemo(
@@ -25,8 +24,7 @@ export default function NdaApp({ coverPageTemplate, standardTermsTemplate }: Nda
   );
 
   async function handleDownload() {
-    if (!formRef.current || !previewRef.current) return;
-    if (!formRef.current.reportValidity()) return;
+    if (!previewRef.current) return;
 
     setIsDownloading(true);
     setDownloadError(null);
@@ -69,7 +67,7 @@ export default function NdaApp({ coverPageTemplate, standardTermsTemplate }: Nda
             standard, free to use under CC BY 4.0.
           </p>
         </header>
-        <NdaForm ref={formRef} values={values} onChange={setValues} />
+        <NdaForm values={values} onChange={setValues} />
       </section>
 
       <section className="lg:w-1/2">

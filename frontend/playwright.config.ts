@@ -18,10 +18,11 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  // Run against a production build, per Next.js's own testing guidance —
-  // this is also the mode the html2pdf.js page-break bug was found in.
+  // Run against a production build served by the real FastAPI backend
+  // (not `next start` -- the frontend is a static export now, and the
+  // backend is what actually implements the /login redirect gate).
   webServer: {
-    command: `npm run build && npm run start -- -p ${PORT}`,
+    command: `bash -c "npm run build && cd ../backend && uv run uvicorn app.main:app --port ${PORT}"`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

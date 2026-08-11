@@ -125,45 +125,19 @@ describe("NdaForm", () => {
     expect(values.mndaTermYears).toBe("1");
   });
 
-  it("marks purpose, effective date, governing law, jurisdiction, and party fields as required", () => {
+  it("does not mark any field as required, so the document can always be downloaded", () => {
     render(<ControlledNdaForm />);
-    expect(screen.getByLabelText("Purpose", { exact: false })).toBeRequired();
-    expect(screen.getByLabelText("Effective Date")).toBeRequired();
-    expect(screen.getByLabelText("Governing Law", { exact: false })).toBeRequired();
-    expect(screen.getByLabelText("Jurisdiction", { exact: false })).toBeRequired();
-    for (const field of screen.getAllByLabelText("Print Name")) {
-      expect(field).toBeRequired();
-    }
-  });
-
-  it("does not mark the optional modifications field as required", () => {
-    render(<ControlledNdaForm />);
+    expect(screen.getByLabelText("Purpose", { exact: false })).not.toBeRequired();
+    expect(screen.getByLabelText("Effective Date")).not.toBeRequired();
+    expect(screen.getByLabelText("Governing Law", { exact: false })).not.toBeRequired();
+    expect(screen.getByLabelText("Jurisdiction", { exact: false })).not.toBeRequired();
     expect(screen.getByLabelText("Modifications", { exact: false })).not.toBeRequired();
-  });
-
-  it("requires the years input only while the fixed-term option is selected", async () => {
-    const user = userEvent.setup();
-    render(<ControlledNdaForm />);
-    const [mndaYears] = screen.getAllByRole("spinbutton");
-    expect(mndaYears).toBeRequired();
-
-    await user.click(screen.getByRole("radio", { name: /^Expires/ }));
-    // Selecting "Expires" (fixed) explicitly should keep it required; now
-    // switch to perpetual and confirm it becomes optional.
-    await user.click(
-      screen.getByRole("radio", { name: "Continues until terminated in accordance with the terms of the MNDA" })
-    );
-    expect(mndaYears).not.toBeRequired();
-  });
-
-  it("requires the confidentiality years input only while the fixed-term option is selected", async () => {
-    const user = userEvent.setup();
-    render(<ControlledNdaForm />);
-    const [, confidentialityYears] = screen.getAllByRole("spinbutton");
-    expect(confidentialityYears).toBeRequired();
-
-    await user.click(screen.getByRole("radio", { name: "In perpetuity" }));
-    expect(confidentialityYears).not.toBeRequired();
+    for (const field of screen.getAllByLabelText("Print Name")) {
+      expect(field).not.toBeRequired();
+    }
+    for (const field of screen.getAllByRole("spinbutton")) {
+      expect(field).not.toBeRequired();
+    }
   });
 
   it("forwards the ref to the underlying <form> element", () => {
