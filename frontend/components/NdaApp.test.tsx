@@ -24,6 +24,14 @@ vi.mock("html2pdf.js", () => ({
   default: () => html2pdfFactory(),
 }));
 
+// NdaChatPanel now renders alongside the form; these tests exercise the
+// form/preview/PDF flow only, so the chat's network calls are mocked out
+// rather than exercised here (see NdaChatPanel.test.tsx for that coverage).
+vi.mock("@/lib/api", () => ({
+  postNdaChatTurn: vi.fn().mockResolvedValue({ reply: "", updates: {} }),
+  NdaChatApiError: class NdaChatApiError extends Error {},
+}));
+
 async function fillRequiredFields(user: ReturnType<typeof userEvent.setup>) {
   // userEvent.type doesn't support jsdom's <input type="date"> (there's no
   // native segmented date control to simulate keystrokes into), so we set

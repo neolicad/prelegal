@@ -8,7 +8,7 @@ The available documents are covered in the catalog.json file in the project root
 
 @catalog.json
 
-The current implementation supports all 11 document types via AI chat with full user authentication and document persistence.
+The current implementation covers 1 of the 11 document types (Mutual NDA), filled in via a plain form rather than AI chat, with a fake login screen (no real authentication) and no document persistence. See "Implementation status" below for details.
 
 ## Development process
 
@@ -53,3 +53,12 @@ Backend available at http://localhost:8000
 - Purple Secondary: `#753991` (submit buttons)
 - Dark Navy: `#032147` (headings)
 - Gray Text: `#888888`
+
+## Implementation status (as of 2026-08-10)
+
+- **PL-5** (done): legal template dataset — `templates/` + `catalog.json`.
+- **PL-6** (done): Mutual NDA creator prototype — a form-based (not AI chat) Next.js app in `frontend/` that fills in the Mutual NDA templates live and downloads a PDF. No backend involved at this point.
+- **PL-7** (done): V1 technical foundation per the Technical design above. Added `backend/` (FastAPI, uv-managed), a Dockerfile packaging the whole app, `scripts/start-*`/`stop-*` for mac/linux/windows, and a SQLite `users` table recreated from scratch on every startup (schema only, not wired to anything yet). The frontend now builds as a static export served by FastAPI on port 8000, gated behind a **fake** login screen: any credentials are accepted, there's no real session or password checking, just a client-set cookie the backend checks before serving the app.
+- **PL-8** (done): AI chat for the Mutual NDA, still Mutual NDA only. `frontend/components/NdaChatPanel.tsx` sits alongside the existing form and shares its `NdaFormValues` state — chat and manual form edits fill in the same live preview interchangeably. Each turn posts to `POST /api/nda/chat` (`backend/app/routers/nda_chat.py`, cookie-gated), which calls `openrouter/openai/gpt-oss-120b` via Cerebras/LiteLLM (`backend/app/llm.py`, per the Cerebras skill) with Structured Outputs, returning a reply plus a partial field-updates object that's merged into the shared state without ever overwriting fields the AI wasn't confident about.
+
+Not yet built: the other 10 document types, real authentication/sign-up, and document persistence.

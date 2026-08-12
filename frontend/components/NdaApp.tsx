@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import NdaChatPanel from "./NdaChatPanel";
 import NdaForm from "./NdaForm";
 import NdaPreview from "./NdaPreview";
 import { defaultFormValues, type NdaFormValues } from "@/lib/nda-form";
@@ -50,12 +51,22 @@ export default function NdaApp({ coverPageTemplate, standardTermsTemplate }: Nda
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-7xl flex-col gap-8 px-4 py-8 lg:flex-row lg:px-8">
-      <section className="lg:w-1/2">
+    <div className="mx-auto flex min-h-screen max-w-[110rem] flex-col gap-8 px-4 py-8 lg:flex-row lg:px-8">
+      <section className="lg:w-1/3">
         <header className="mb-6">
           <h1 className="text-2xl font-semibold text-neutral-900">Mutual NDA Creator</h1>
           <p className="mt-2 text-sm text-neutral-600">
-            Fill in the details below — the document on the right updates as you type. Based on the{" "}
+            Chat with the assistant, or fill in the form — either fills in the document on the right
+            as you go.
+          </p>
+        </header>
+        <NdaChatPanel values={values} onValuesChange={setValues} />
+      </section>
+
+      <section className="lg:w-1/3">
+        <header className="mb-6">
+          <p className="mt-2 text-sm text-neutral-600">
+            Based on the{" "}
             <a
               className="underline underline-offset-2 hover:text-neutral-900"
               href="https://commonpaper.com/standards/mutual-nda/1.0/"
@@ -70,7 +81,7 @@ export default function NdaApp({ coverPageTemplate, standardTermsTemplate }: Nda
         <NdaForm values={values} onChange={setValues} />
       </section>
 
-      <section className="lg:w-1/2">
+      <section className="lg:w-1/3">
         <div className="flex flex-col gap-4 lg:sticky lg:top-8">
           <div className="flex items-center gap-3">
             <button
