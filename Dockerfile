@@ -3,6 +3,7 @@ FROM node:22-slim AS frontend-build
 
 WORKDIR /app
 COPY templates/ templates/
+COPY catalog.json catalog.json
 
 WORKDIR /app/frontend
 COPY frontend/package.json frontend/package-lock.json ./
@@ -19,6 +20,7 @@ COPY backend/pyproject.toml backend/uv.lock ./
 RUN uv sync --locked --no-dev
 
 COPY backend/app ./app
+COPY catalog.json /app/catalog.json
 COPY --from=frontend-build /app/frontend/out /app/frontend/out
 
 ENV PRELEGAL_FRONTEND_DIST=/app/frontend/out

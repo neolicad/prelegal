@@ -1,33 +1,27 @@
-"""Calls the LLM (via LiteLLM/OpenRouter/Cerebras) that powers the Mutual
-NDA chat. See .claude/skills/cerebras/SKILL.md for the required call shape.
+"""Calls the LLM (via LiteLLM/OpenRouter/Cerebras) that powers every document
+type's chat endpoint. See .claude/skills/cerebras/SKILL.md for the required
+call shape.
 """
 
+import json
 import logging
 
 from litellm import completion
+from pydantic import create_model
 
-from app.schemas import ChatTurnRequest, ChatTurnResponse, NdaFormValues
+from app.document_types import DocumentTypeSpec
+from app.dynamic_schemas import build_field_updates_model, build_form_values_model
+from app.schemas import ChatTurnRequest
 
 logger = logging.getLogger(__name__)
 
 MODEL = "openrouter/openai/gpt-oss-120b"
 EXTRA_BODY = {"provider": {"order": ["cerebras"]}}
 
-FIELD_DESCRIPTIONS = """
-- purpose: why the parties are sharing confidential information
-- effectiveDate: the date the MNDA takes effect (yyyy-mm-dd)
-- mndaTermType ("fixed" or "perpetual") + mndaTermYears: how long the MNDA itself lasts
-- confidentialityTermType ("fixed" or "perpetual") + confidentialityTermYears: how long confidentiality obligations last
-- governingLaw: the state whose laws govern the agreement
-- jurisdiction: the courts where disputes will be resolved, e.g. "courts located in New Castle, DE"
-- modifications: any changes to the Standard Terms (optional, leave blank if none)
-- party1 / party2, each with: printName, title, company, noticeAddress (email or postal address)
-""".strip()
+SYSTEM_PROMPT_TEMPLATE = """You are helping a user fill in a {document_name} through conversation. \
+Ask about one missing field at a time, in a friendly, concise way.
 
-SYSTEM_PROMPT_TEMPLATE = """You are helping a user fill in a Mutual Non-Disclosure Agreement (MNDA) \
-through conversation. Ask about one missing field at a time, in a friendly, concise way.
-
-The MNDA has these fields:
+The {document_name} has these fields:
 {field_descriptions}
 
 Fields already filled in (as JSON) -- do not ask about these again unless the \
@@ -40,6 +34,9 @@ information for, even if it covers several fields at once. Leave a field \
 null if the message says nothing new about it -- never guess or invent values.
 - Do not restate a field's existing value in `updates` unless the user is changing it.
 - Keep `reply` short and conversational.
+- If any field is still empty after applying this turn's updates, `reply` MUST \
+end by asking about exactly one of the remaining empty fields. Only give a \
+plain confirmation with no question if every field already has a value.
 """
 
 
@@ -47,16 +44,38 @@ class LlmError(Exception):
     """Raised when the LLM call fails or its output can't be used."""
 
 
-def _build_system_prompt(current_values: NdaFormValues) -> str:
+def _field_descriptions(spec: DocumentTypeSpec) -> str:
+    lines = [
+        f"- {field.key}: {field.label}" + (f" ({field.helpText})" if field.helpText else "")
+        for field in spec.fields
+    ]
+    lines += [
+        f"- {party.key}: {party.label}, with printName, title, company, noticeAddress"
+        for party in spec.parties
+    ]
+    return "\n".join(lines)
+
+
+def _build_system_prompt(spec: DocumentTypeSpec, current_values: dict) -> str:
     return SYSTEM_PROMPT_TEMPLATE.format(
-        field_descriptions=FIELD_DESCRIPTIONS,
-        current_values=current_values.model_dump_json(indent=2),
+        document_name=spec.name,
+        field_descriptions=_field_descriptions(spec),
+        current_values=json.dumps(current_values, indent=2),
     )
 
 
-def generate_nda_reply(payload: ChatTurnRequest) -> ChatTurnResponse:
+def generate_chat_reply(spec: DocumentTypeSpec, payload: ChatTurnRequest) -> dict:
+    form_values_model = build_form_values_model(spec.slug)
+    field_updates_model = build_field_updates_model(spec.slug)
+    chat_turn_response_model = create_model(
+        f"ChatTurnResponse_{spec.slug}",
+        reply=(str, ...),
+        updates=(field_updates_model, ...),
+    )
+
+    current_values = form_values_model.model_validate(payload.values)
     messages = [
-        {"role": "system", "content": _build_system_prompt(payload.values)},
+        {"role": "system", "content": _build_system_prompt(spec, current_values.model_dump())},
         *[{"role": message.role, "content": message.content} for message in payload.history],
         {"role": "user", "content": payload.message},
     ]
@@ -65,11 +84,12 @@ def generate_nda_reply(payload: ChatTurnRequest) -> ChatTurnResponse:
         response = completion(
             model=MODEL,
             messages=messages,
-            response_format=ChatTurnResponse,
+            response_format=chat_turn_response_model,
             reasoning_effort="low",
             extra_body=EXTRA_BODY,
         )
-        return ChatTurnResponse.model_validate_json(response.choices[0].message.content)
+        result = chat_turn_response_model.model_validate_json(response.choices[0].message.content)
+        return result.model_dump()
     except Exception as error:
-        logger.exception("NDA chat LLM call failed")
+        logger.exception("Document chat LLM call failed")
         raise LlmError("The AI assistant is temporarily unavailable.") from error

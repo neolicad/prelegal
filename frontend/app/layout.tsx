@@ -18,8 +18,8 @@ const lora = Lora({
 });
 
 export const metadata: Metadata = {
-  title: "Mutual NDA Creator | Prelegal",
-  description: "Fill in a form and generate a Common Paper Mutual NDA, ready to download as a PDF.",
+  title: "Prelegal",
+  description: "Chat or fill in a form to generate a Common Paper legal agreement, ready to download as a PDF.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
