@@ -47,6 +47,12 @@ scripts/stop-windows.ps1
 ```
 Backend available at http://localhost:8000
 
+## Frontend version badge
+
+A small badge fixed in the top-right corner of every page shows the current frontend build's version, so it's obvious at a glance whether the browser is running stale cached content vs. the latest code (see the PL-9 browser-caching incident). The version lives in `frontend/lib/version.ts` (`APP_VERSION`).
+
+**Every code change (frontend or backend) must bump `APP_VERSION` as part of the same change**, using a short, descriptive, dot-prefixed slug naming what changed rather than a number -- e.g. `v.scrolltobottom`, `v.faketoggle`, `v.addversion` -- so the badge itself tells you which change is live without needing to cross-reference a changelog.
+
 ## Color Scheme
 - Accent Yellow: `#ecad0a`
 - Blue Primary: `#209dd7`

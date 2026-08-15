@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Lora } from "next/font/google";
 import FakeAiToggle from "@/components/FakeAiToggle";
+import VersionBadge from "@/components/VersionBadge";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col bg-neutral-50">
         {children}
         <FakeAiToggle />
+        <VersionBadge />
       </body>
     </html>
   );
