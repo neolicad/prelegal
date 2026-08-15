@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import DocumentApp from "./DocumentApp";
@@ -25,8 +25,12 @@ vi.mock("html2pdf.js", () => ({ default: () => html2pdfFactory() }));
 vi.mock("@/lib/api", () => ({
   postDocumentChatTurn: vi.fn().mockResolvedValue({ reply: "", updates: {} }),
   postDocumentMatchTurn: vi.fn(),
+  saveDocument: vi.fn().mockResolvedValue({ id: 1, slug: "mutual-nda", title: "Untitled", createdAt: "" }),
+  getSavedDocument: vi.fn(),
   DocumentChatApiError: class DocumentChatApiError extends Error {},
 }));
+
+const { saveDocument, getSavedDocument } = await import("@/lib/api");
 
 async function fillRequiredNdaFields(user: ReturnType<typeof userEvent.setup>) {
   // userEvent.type doesn't support jsdom's <input type="date"> (there's no
@@ -53,6 +57,9 @@ describe("DocumentApp", () => {
     html2pdfWorker.from.mockClear();
     html2pdfWorker.save.mockReset();
     html2pdfFactory.mockClear();
+    vi.mocked(saveDocument).mockClear();
+    vi.mocked(saveDocument).mockResolvedValue({ id: 1, slug: "mutual-nda", title: "Untitled", createdAt: "" });
+    vi.mocked(getSavedDocument).mockReset();
   });
 
   it("renders the form and a live preview of the default document", () => {
@@ -140,5 +147,73 @@ describe("DocumentApp", () => {
       await screen.findByText("Something went wrong generating the PDF. Please try again.")
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Download PDF" })).toBeEnabled();
+  });
+
+  it("saves the document to history when Download PDF is clicked", async () => {
+    html2pdfWorker.save.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(<DocumentApp spec={ndaSpec} templates={ndaTemplates} />);
+
+    await user.type(screen.getByLabelText("Governing Law", { exact: false }), "Delaware");
+    await user.click(screen.getByRole("button", { name: "Download PDF" }));
+
+    await waitFor(() => expect(html2pdfWorker.save).toHaveBeenCalled());
+    expect(saveDocument).toHaveBeenCalledWith(
+      "mutual-nda",
+      expect.objectContaining({ governingLaw: "Delaware" })
+    );
+  });
+
+  it("still downloads the PDF, with a warning, when saving to history fails", async () => {
+    html2pdfWorker.save.mockResolvedValue(undefined);
+    vi.mocked(saveDocument).mockRejectedValue(new Error("network error"));
+    const user = userEvent.setup();
+    render(<DocumentApp spec={ndaSpec} templates={ndaTemplates} />);
+
+    await user.click(screen.getByRole("button", { name: "Download PDF" }));
+
+    await waitFor(() => expect(html2pdfWorker.save).toHaveBeenCalled());
+    expect(
+      await screen.findByText("Downloaded, but couldn't save this document to My Documents.")
+    ).toBeInTheDocument();
+  });
+
+  describe("resuming a saved document", () => {
+    const originalSearch = window.location.search;
+
+    afterEach(() => {
+      window.history.replaceState(null, "", `/${originalSearch}`);
+    });
+
+    it("pre-fills the form from a saved document matching this slug's ?documentId", async () => {
+      window.history.replaceState(null, "", "/?documentId=42");
+      vi.mocked(getSavedDocument).mockResolvedValue({
+        id: 42,
+        slug: "mutual-nda",
+        title: "Acme Inc. — Mutual NDA",
+        createdAt: "",
+        values: { ...ndaSpec.fields.reduce((acc, f) => ({ ...acc, [f.key]: "" }), {}), governingLaw: "Delaware" },
+      });
+
+      render(<DocumentApp spec={ndaSpec} templates={ndaTemplates} />);
+
+      expect(await screen.findByText("Governing Law: Delaware")).toBeInTheDocument();
+    });
+
+    it("ignores a saved document for a different slug", async () => {
+      window.history.replaceState(null, "", "/?documentId=42");
+      vi.mocked(getSavedDocument).mockResolvedValue({
+        id: 42,
+        slug: "csa",
+        title: "Some CSA",
+        createdAt: "",
+        values: {},
+      });
+
+      render(<DocumentApp spec={ndaSpec} templates={ndaTemplates} />);
+
+      await waitFor(() => expect(getSavedDocument).toHaveBeenCalled());
+      expect(screen.getByLabelText("Governing Law", { exact: false })).toHaveValue("");
+    });
   });
 });

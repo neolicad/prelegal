@@ -1,12 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { signUpNewUser } from "./helpers";
 
 test.describe("Document picker", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/login");
-    await page.getByLabel("Email").fill("alice@example.com");
-    await page.getByLabel("Password").fill("hunter2");
-    await page.getByRole("button", { name: "Sign in" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "What do you need to create?" })).toBeVisible();
+    await signUpNewUser(page);
   });
 
   test("lists every supported document type as a link to its creator", async ({ page }) => {

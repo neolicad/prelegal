@@ -59,7 +59,11 @@ def init_db() -> None:
 
 
 def get_connection() -> sqlite3.Connection:
-    connection = sqlite3.connect(_db_path())
+    # check_same_thread=False: FastAPI dispatches a sync dependency
+    # generator's startup and teardown as separate threadpool jobs, not
+    # guaranteed to land on the same worker thread -- sqlite3's default
+    # same-thread check would otherwise raise on close().
+    connection = sqlite3.connect(_db_path(), check_same_thread=False)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
     return connection

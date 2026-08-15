@@ -1,12 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { signUpNewUser } from "./helpers";
 
 test.describe("Mutual NDA chat", () => {
   test.beforeEach(async ({ page }) => {
-    // No real authentication yet -- any credentials sign you in (PL-7).
-    await page.goto("/login");
-    await page.getByLabel("Email").fill("alice@example.com");
-    await page.getByLabel("Password").fill("hunter2");
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await signUpNewUser(page);
     await page.getByRole("link", { name: /Mutual Non-Disclosure Agreement/ }).click();
     await expect(
       page.getByRole("heading", { level: 1, name: "Mutual Non-Disclosure Agreement Creator" })

@@ -3,10 +3,10 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import Button from "./Button";
-import { DocumentChatApiError, login } from "@/lib/api";
+import { DocumentChatApiError, signup } from "@/lib/api";
 import { inputClass } from "@/lib/ui";
 
-export default function LoginForm() {
+export default function SignupForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +17,7 @@ export default function LoginForm() {
     setError(null);
     setIsSubmitting(true);
     try {
-      await login(email, password);
+      await signup(email, password);
       // Full page load (not client-side routing) so the backend's cookie
       // check in GET / actually runs -- see backend/app/main.py.
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination
@@ -30,7 +30,7 @@ export default function LoginForm() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4">
-      <h1 className="mb-6 text-2xl font-semibold text-brand-navy">Sign in to Prelegal</h1>
+      <h1 className="mb-6 text-2xl font-semibold text-brand-navy">Create your Prelegal account</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1">
           <span className="text-sm font-medium text-neutral-800">Email</span>
@@ -46,6 +46,7 @@ export default function LoginForm() {
           <span className="text-sm font-medium text-neutral-800">Password</span>
           <input
             required
+            minLength={8}
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -54,13 +55,13 @@ export default function LoginForm() {
         </label>
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
         <Button type="submit" disabled={isSubmitting} className="mt-2">
-          {isSubmitting ? "Signing in…" : "Sign in"}
+          {isSubmitting ? "Creating account…" : "Sign up"}
         </Button>
       </form>
       <p className="mt-6 text-sm text-neutral-600">
-        Don&rsquo;t have an account?{" "}
-        <Link href="/signup" className="font-medium text-brand-blue hover:underline">
-          Sign up
+        Already have an account?{" "}
+        <Link href="/login" className="font-medium text-brand-blue hover:underline">
+          Sign in
         </Link>
       </p>
     </div>

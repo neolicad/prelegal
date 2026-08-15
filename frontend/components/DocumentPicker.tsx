@@ -57,8 +57,8 @@ export default function DocumentPicker({ documentTypes }: DocumentPickerProps) {
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-10 px-4 py-12">
       <header>
-        <h1 className="text-3xl font-semibold text-[#032147]">What do you need to create?</h1>
-        <p className="mt-2 text-sm text-[#888888]">
+        <h1 className="text-3xl font-semibold text-brand-navy">What do you need to create?</h1>
+        <p className="mt-2 text-sm text-brand-gray">
           Pick a document below, or describe what you need and I&rsquo;ll point you to the right one.
         </p>
       </header>
@@ -80,10 +80,10 @@ export default function DocumentPicker({ documentTypes }: DocumentPickerProps) {
           <Link
             key={spec.slug}
             href={`/documents/${spec.slug}`}
-            className="flex flex-col gap-2 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm transition hover:border-[#209dd7] hover:shadow-md"
+            className="flex flex-col gap-2 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm transition hover:border-brand-blue hover:shadow-md"
           >
-            <h2 className="text-sm font-semibold text-[#032147]">{spec.name}</h2>
-            <p className="text-xs text-[#888888]">{spec.description}</p>
+            <h2 className="text-sm font-semibold text-brand-navy">{spec.name}</h2>
+            <p className="text-xs text-brand-gray">{spec.description}</p>
           </Link>
         ))}
       </section>

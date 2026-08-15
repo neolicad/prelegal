@@ -1,3 +1,20 @@
+def test_concurrent_signups_all_succeed(client):
+    # Regression test for a real bug: FastAPI dispatches a sync dependency
+    # generator's startup and teardown as separate threadpool jobs, not
+    # guaranteed to run on the same worker thread. sqlite3.connect()'s
+    # default same-thread check turned that into a 500 on connection.close()
+    # under real concurrency -- see app/db.py's get_connection().
+    from concurrent.futures import ThreadPoolExecutor
+
+    def signup(i: int):
+        return client.post("/api/auth/signup", json={"email": f"concurrent{i}@example.com", "password": "x"})
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        responses = list(pool.map(signup, range(8)))
+
+    assert [response.status_code for response in responses] == [200] * 8
+
+
 def test_signup_creates_a_user_and_signs_them_in(client):
     response = client.post("/api/auth/signup", json={"email": "a@example.com", "password": "hunter2"})
 

@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import type { DocumentTypeSpec, FieldSpec } from "@/lib/document-types";
 import { type DocumentFormValues, type PartyInfo, getFieldValue, getPartyValue } from "@/lib/document-form";
+import { inputClass } from "@/lib/ui";
 
 interface DocumentFormProps {
   ref?: React.Ref<HTMLFormElement>;
@@ -10,9 +11,6 @@ interface DocumentFormProps {
   values: DocumentFormValues;
   onChange: (values: DocumentFormValues) => void;
 }
-
-const inputClass =
-  "w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 shadow-sm focus:border-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-500";
 
 /**
  * One form, driven entirely by a document type's field/party schema (see
