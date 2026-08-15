@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DocumentChatApiError, postDocumentChatTurn, postDocumentMatchTurn } from "./api";
+import { setFakeAiEnabled } from "./fake-ai";
 
 describe("postDocumentChatTurn", () => {
   afterEach(() => {
@@ -83,5 +84,46 @@ describe("postDocumentMatchTurn", () => {
       expect.objectContaining({ body: JSON.stringify({ message: "I sell SaaS", history: [] }) })
     );
     expect(result).toEqual({ matchedSlug: "csa", reply: "Sounds like a CSA." });
+  });
+});
+
+describe("fake AI header", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    setFakeAiEnabled(false);
+  });
+
+  it("is omitted when fake AI mode is disabled", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({}) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await postDocumentChatTurn("mutual-nda", "Hi", [], {});
+
+    const headers = fetchMock.mock.calls[0][1].headers;
+    expect(headers).not.toHaveProperty("x-prelegal-fake-ai");
+  });
+
+  it("is attached to chat requests when fake AI mode is enabled", async () => {
+    setFakeAiEnabled(true);
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({}) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await postDocumentChatTurn("mutual-nda", "Hi", [], {});
+
+    expect(fetchMock.mock.calls[0][1].headers).toEqual(
+      expect.objectContaining({ "x-prelegal-fake-ai": "1" })
+    );
+  });
+
+  it("is attached to match requests when fake AI mode is enabled", async () => {
+    setFakeAiEnabled(true);
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({}) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await postDocumentMatchTurn("Hi", []);
+
+    expect(fetchMock.mock.calls[0][1].headers).toEqual(
+      expect.objectContaining({ "x-prelegal-fake-ai": "1" })
+    );
   });
 });

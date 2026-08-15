@@ -9,6 +9,7 @@ from litellm import completion
 from pydantic import BaseModel
 
 from app.document_types import list_document_types
+from app.fake_ai import FAKE_REPLY
 from app.llm import EXTRA_BODY, MODEL, LlmError
 from app.schemas import MatchRequest
 
@@ -38,7 +39,10 @@ def _catalog_description() -> str:
     return "\n".join(f"- {spec.slug}: {spec.name} -- {spec.description}" for spec in list_document_types())
 
 
-def generate_match_reply(payload: MatchRequest) -> MatchResponse:
+def generate_match_reply(payload: MatchRequest, use_fake: bool = False) -> MatchResponse:
+    if use_fake:
+        return MatchResponse(matchedSlug=None, reply=FAKE_REPLY)
+
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT_TEMPLATE.format(catalog=_catalog_description())},
         *[{"role": message.role, "content": message.content} for message in payload.history],

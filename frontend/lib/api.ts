@@ -1,5 +1,6 @@
 import type { ChatMessage, DocumentFieldUpdates } from "./document-chat";
 import type { DocumentFormValues } from "./document-form";
+import { FAKE_AI_HEADER, isFakeAiEnabled } from "./fake-ai";
 
 // Empty string resolves to a same-origin relative URL, which is correct in
 // production (FastAPI serves this static export on the same origin). Local
@@ -10,10 +11,13 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 export class DocumentChatApiError extends Error {}
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (isFakeAiEnabled()) headers[FAKE_AI_HEADER] = "1";
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(body),
   });
 

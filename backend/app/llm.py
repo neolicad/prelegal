@@ -11,6 +11,7 @@ from pydantic import create_model
 
 from app.document_types import DocumentTypeSpec
 from app.dynamic_schemas import build_field_updates_model, build_form_values_model
+from app.fake_ai import FAKE_REPLY
 from app.schemas import ChatTurnRequest
 
 logger = logging.getLogger(__name__)
@@ -99,7 +100,10 @@ def _build_system_prompt(spec: DocumentTypeSpec, current_values: dict) -> str:
     )
 
 
-def generate_chat_reply(spec: DocumentTypeSpec, payload: ChatTurnRequest) -> dict:
+def generate_chat_reply(spec: DocumentTypeSpec, payload: ChatTurnRequest, use_fake: bool = False) -> dict:
+    if use_fake:
+        return {"reply": FAKE_REPLY, "updates": {}}
+
     form_values_model = build_form_values_model(spec.slug)
     field_updates_model = build_field_updates_model(spec.slug)
     chat_turn_response_model = create_model(

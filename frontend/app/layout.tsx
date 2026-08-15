@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Lora } from "next/font/google";
+import FakeAiToggle from "@/components/FakeAiToggle";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,7 +29,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${lora.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-neutral-50">{children}</body>
+      <body className="min-h-full flex flex-col bg-neutral-50">
+        {children}
+        <FakeAiToggle />
+      </body>
     </html>
   );
 }

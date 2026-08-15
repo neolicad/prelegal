@@ -68,4 +68,33 @@ test.describe("Mutual NDA chat", () => {
     await expect(page.getByText("Reply number 1.")).not.toBeInViewport();
     await expect(page.getByText("Reply number 10.")).toBeInViewport();
   });
+
+  test("sends the fake-AI header once the testing toggle is enabled", async ({ page }) => {
+    let capturedHeader: string | undefined;
+    await page.route("**/api/documents/mutual-nda/chat", async (route) => {
+      capturedHeader = route.request().headers()["x-prelegal-fake-ai"];
+      await route.fulfill({ json: { reply: "Blah, blah, blah.", updates: {} } });
+    });
+
+    await page.getByRole("checkbox", { name: "Fake AI (testing)" }).check();
+    await page.getByLabel("Message").fill("Hello");
+    await page.getByRole("button", { name: "Send" }).click();
+
+    await expect(page.getByText("Blah, blah, blah.")).toBeVisible();
+    expect(capturedHeader).toBe("1");
+  });
+
+  test("omits the fake-AI header while the testing toggle is off", async ({ page }) => {
+    let capturedHeader: string | undefined;
+    await page.route("**/api/documents/mutual-nda/chat", async (route) => {
+      capturedHeader = route.request().headers()["x-prelegal-fake-ai"];
+      await route.fulfill({ json: { reply: "Real reply.", updates: {} } });
+    });
+
+    await page.getByLabel("Message").fill("Hello");
+    await page.getByRole("button", { name: "Send" }).click();
+
+    await expect(page.getByText("Real reply.")).toBeVisible();
+    expect(capturedHeader).toBeUndefined();
+  });
 });

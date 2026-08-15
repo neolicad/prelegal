@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.document_types import get_document_type
+from app.fake_ai import FAKE_REPLY
 from app.llm import LlmError, _build_system_prompt, generate_chat_reply
 from app.schemas import ChatTurnRequest
 
@@ -44,6 +45,19 @@ def test_generate_chat_reply_parses_structured_output(monkeypatch, slug):
 
     assert result["reply"].startswith("Sounds good.")
     assert result["updates"][field_key] == "A new value"
+
+
+def test_generate_chat_reply_returns_canned_reply_without_calling_completion_when_use_fake(monkeypatch):
+    spec = get_document_type("mutual-nda")
+
+    def fail_if_called(**kwargs):
+        raise AssertionError("real LLM was called despite use_fake=True")
+
+    monkeypatch.setattr("app.llm.completion", fail_if_called)
+
+    result = generate_chat_reply(spec, ChatTurnRequest(message="hello", values={}), use_fake=True)
+
+    assert result == {"reply": FAKE_REPLY, "updates": {}}
 
 
 def test_generate_chat_reply_wraps_failures_as_llm_error(monkeypatch):
