@@ -42,7 +42,7 @@ def test_generate_chat_reply_parses_structured_output(monkeypatch, slug):
 
     result = generate_chat_reply(spec, ChatTurnRequest(message="hello", values={}))
 
-    assert result["reply"] == "Sounds good."
+    assert result["reply"].startswith("Sounds good.")
     assert result["updates"][field_key] == "A new value"
 
 
@@ -56,3 +56,52 @@ def test_generate_chat_reply_wraps_failures_as_llm_error(monkeypatch):
 
     with pytest.raises(LlmError):
         generate_chat_reply(spec, ChatTurnRequest(message="hello", values={}))
+
+
+class TestEnsureFollowUpQuestion:
+    """Regression coverage for a real bug: the model sometimes ignores the
+    system prompt's instruction and replies with a bare acknowledgement (e.g.
+    "Got it!") while fields remain unset. generate_chat_reply must not rely
+    on prompt compliance alone to guarantee a follow-up question."""
+
+    def test_appends_a_question_when_the_model_gives_a_bare_acknowledgement(self, monkeypatch):
+        spec = get_document_type("design-partner-agreement")
+        fake_response = _fake_completion_response("Got it!", {"fees": "$100"})
+        monkeypatch.setattr("app.llm.completion", lambda **kwargs: fake_response)
+
+        result = generate_chat_reply(
+            spec, ChatTurnRequest(message="$100", values={"program": "Flight checking", "term": "1 year"})
+        )
+
+        assert result["reply"].startswith("Got it!")
+        assert "?" in result["reply"]
+
+    def test_does_not_duplicate_a_question_the_model_already_asked(self, monkeypatch):
+        spec = get_document_type("design-partner-agreement")
+        fake_response = _fake_completion_response("Got it! What's the Term?", {"fees": "$100"})
+        monkeypatch.setattr("app.llm.completion", lambda **kwargs: fake_response)
+
+        result = generate_chat_reply(
+            spec, ChatTurnRequest(message="$100", values={"program": "Flight checking"})
+        )
+
+        assert result["reply"] == "Got it! What's the Term?"
+
+    def test_does_not_append_a_question_once_every_field_is_filled(self, monkeypatch):
+        spec = get_document_type("design-partner-agreement")
+        complete_values = {
+            "program": "Flight checking",
+            "term": "1 year",
+            "fees": "$100",
+            "effectiveDate": "2026-01-01",
+            "governingLaw": "Delaware",
+            "chosenCourts": "courts located in New Castle, DE",
+            "provider": {"printName": "Alice", "title": "CEO", "company": "Acme", "noticeAddress": "a@acme.com"},
+            "partner": {"printName": "Bob", "title": "COO", "company": "Globex", "noticeAddress": "b@globex.com"},
+        }
+        fake_response = _fake_completion_response("All set, thanks!", {})
+        monkeypatch.setattr("app.llm.completion", lambda **kwargs: fake_response)
+
+        result = generate_chat_reply(spec, ChatTurnRequest(message="that's everything", values=complete_values))
+
+        assert result["reply"] == "All set, thanks!"

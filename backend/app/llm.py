@@ -44,6 +44,41 @@ class LlmError(Exception):
     """Raised when the LLM call fails or its output can't be used."""
 
 
+def _apply_updates(current_values: dict, updates: dict) -> dict:
+    """Applies a FieldUpdates patch to a FormValues dict, same null-means-no-update
+    semantics as frontend/lib/document-chat.ts's mergeDocumentFieldUpdates."""
+    merged = dict(current_values)
+    for key, value in updates.items():
+        if isinstance(value, dict):
+            merged[key] = {**merged.get(key, {}), **{k: v for k, v in value.items() if v}}
+        elif value:
+            merged[key] = value
+    return merged
+
+
+def _first_missing_field_label(spec: DocumentTypeSpec, values: dict) -> str | None:
+    for field in spec.fields:
+        if not str(values.get(field.key, "")).strip():
+            return field.label
+    for party in spec.parties:
+        party_value = values.get(party.key) or {}
+        if not party_value.get("printName", "").strip() or not party_value.get("company", "").strip():
+            return f"{party.label}'s name and company"
+    return None
+
+
+def _ensure_follow_up_question(spec: DocumentTypeSpec, current_values: dict, result: dict) -> None:
+    """Prompt-only instructions aren't reliably followed by this model (observed:
+    it sometimes replies with a bare acknowledgement, e.g. "Got it!", while fields
+    remain unset) -- this deterministically appends a question rather than
+    trusting the model's compliance."""
+    if "?" in result["reply"]:
+        return
+    missing_label = _first_missing_field_label(spec, _apply_updates(current_values, result["updates"]))
+    if missing_label:
+        result["reply"] = f"{result['reply']} What's the {missing_label}?"
+
+
 def _field_descriptions(spec: DocumentTypeSpec) -> str:
     lines = [
         f"- {field.key}: {field.label}" + (f" ({field.helpText})" if field.helpText else "")
@@ -88,8 +123,9 @@ def generate_chat_reply(spec: DocumentTypeSpec, payload: ChatTurnRequest) -> dic
             reasoning_effort="low",
             extra_body=EXTRA_BODY,
         )
-        result = chat_turn_response_model.model_validate_json(response.choices[0].message.content)
-        return result.model_dump()
+        result = chat_turn_response_model.model_validate_json(response.choices[0].message.content).model_dump()
+        _ensure_follow_up_question(spec, current_values.model_dump(), result)
+        return result
     except Exception as error:
         logger.exception("Document chat LLM call failed")
         raise LlmError("The AI assistant is temporarily unavailable.") from error
