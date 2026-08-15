@@ -58,7 +58,7 @@ export default function DocumentChatPanel({ spec, values, onValuesChange }: Docu
       <ChatMessageList
         messages={messages}
         isSending={isSending}
-        className="flex flex-1 flex-col gap-3 overflow-y-auto rounded-lg border border-neutral-200 bg-white p-4 shadow-sm"
+        className="flex-1 overflow-y-auto rounded-lg border border-neutral-200 bg-white p-4 shadow-sm"
       />
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       <ChatInputForm
