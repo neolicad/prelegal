@@ -1,4 +1,5 @@
-import type { NdaFormValues, PartyInfo } from "./nda-form";
+import type { DocumentTypeSpec } from "./document-types";
+import { type DocumentFormValues, type PartyInfo, getPartyValue } from "./document-form";
 
 export type ChatRole = "user" | "assistant";
 
@@ -9,11 +10,8 @@ export interface ChatMessage {
 
 export type PartyInfoUpdates = Partial<PartyInfo>;
 
-/** A partial NdaFormValues patch, as returned by the backend chat endpoint. */
-export interface NdaFieldUpdates extends Partial<Omit<NdaFormValues, "party1" | "party2">> {
-  party1?: PartyInfoUpdates | null;
-  party2?: PartyInfoUpdates | null;
-}
+/** A partial DocumentFormValues patch, as returned by the backend chat endpoint. */
+export type DocumentFieldUpdates = Record<string, string | PartyInfoUpdates | null | undefined>;
 
 function mergeParty(current: PartyInfo, updates: PartyInfoUpdates | null | undefined): PartyInfo {
   if (!updates) return current;
@@ -33,14 +31,19 @@ function mergeParty(current: PartyInfo, updates: PartyInfoUpdates | null | undef
  * untouched -- this is what lets chat and manual form edits coexist without
  * one clobbering the other's work.
  */
-export function mergeNdaFieldUpdates(values: NdaFormValues, updates: NdaFieldUpdates): NdaFormValues {
+export function mergeDocumentFieldUpdates(
+  spec: DocumentTypeSpec,
+  values: DocumentFormValues,
+  updates: DocumentFieldUpdates
+): DocumentFormValues {
+  const partyKeys = new Set(spec.parties.map((party) => party.key));
   const merged = { ...values };
-  for (const key of Object.keys(updates) as (keyof NdaFieldUpdates)[]) {
-    if (key === "party1" || key === "party2") continue;
-    const value = updates[key];
-    if (value) merged[key] = value as never;
+  for (const [key, update] of Object.entries(updates)) {
+    if (partyKeys.has(key)) {
+      merged[key] = mergeParty(getPartyValue(values, key), update as PartyInfoUpdates | null | undefined);
+    } else if (update) {
+      merged[key] = update as string;
+    }
   }
-  merged.party1 = mergeParty(values.party1, updates.party1);
-  merged.party2 = mergeParty(values.party2, updates.party2);
   return merged;
 }

@@ -1,27 +1,28 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import NdaChatPanel from "./NdaChatPanel";
-import NdaForm from "./NdaForm";
-import NdaPreview from "./NdaPreview";
-import { defaultFormValues, type NdaFormValues } from "@/lib/nda-form";
-import { renderNdaDocument } from "@/lib/render-nda";
+import DocumentChatPanel from "./DocumentChatPanel";
+import DocumentForm from "./DocumentForm";
+import DocumentPreview from "./DocumentPreview";
+import { defaultFormValues, getPartyValue, type DocumentFormValues } from "@/lib/document-form";
+import { renderDocument, type DocumentTemplates } from "@/lib/render-document";
 import { slugify } from "@/lib/slugify";
+import type { DocumentTypeSpec } from "@/lib/document-types";
 
-interface NdaAppProps {
-  coverPageTemplate: string;
-  standardTermsTemplate: string;
+interface DocumentAppProps {
+  spec: DocumentTypeSpec;
+  templates: DocumentTemplates;
 }
 
-export default function NdaApp({ coverPageTemplate, standardTermsTemplate }: NdaAppProps) {
-  const [values, setValues] = useState<NdaFormValues>(defaultFormValues);
+export default function DocumentApp({ spec, templates }: DocumentAppProps) {
+  const [values, setValues] = useState<DocumentFormValues>(() => defaultFormValues(spec));
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
 
   const documentMarkdown = useMemo(
-    () => renderNdaDocument(coverPageTemplate, standardTermsTemplate, values),
-    [coverPageTemplate, standardTermsTemplate, values]
+    () => renderDocument(spec, templates, values),
+    [spec, templates, values]
   );
 
   async function handleDownload() {
@@ -31,7 +32,8 @@ export default function NdaApp({ coverPageTemplate, standardTermsTemplate }: Nda
     setDownloadError(null);
     try {
       const html2pdf = (await import("html2pdf.js")).default;
-      const filename = `${slugify(values.party1.company)}-${slugify(values.party2.company)}-mutual-nda.pdf`;
+      const partySlugs = spec.parties.map((party) => slugify(getPartyValue(values, party.key).company));
+      const filename = `${[...partySlugs, spec.slug].join("-")}.pdf`;
       await html2pdf()
         .set({
           margin: 0.5,
@@ -43,7 +45,7 @@ export default function NdaApp({ coverPageTemplate, standardTermsTemplate }: Nda
         .from(previewRef.current)
         .save();
     } catch (error) {
-      console.error("Failed to generate NDA PDF", error);
+      console.error("Failed to generate document PDF", error);
       setDownloadError("Something went wrong generating the PDF. Please try again.");
     } finally {
       setIsDownloading(false);
@@ -54,13 +56,13 @@ export default function NdaApp({ coverPageTemplate, standardTermsTemplate }: Nda
     <div className="mx-auto flex min-h-screen max-w-[110rem] flex-col gap-8 px-4 py-8 lg:flex-row lg:px-8">
       <section className="lg:w-1/3">
         <header className="mb-6">
-          <h1 className="text-2xl font-semibold text-neutral-900">Mutual NDA Creator</h1>
+          <h1 className="text-2xl font-semibold text-neutral-900">{spec.name} Creator</h1>
           <p className="mt-2 text-sm text-neutral-600">
             Chat with the assistant, or fill in the form — either fills in the document on the right
             as you go.
           </p>
         </header>
-        <NdaChatPanel values={values} onValuesChange={setValues} />
+        <DocumentChatPanel spec={spec} values={values} onValuesChange={setValues} />
       </section>
 
       <section className="lg:w-1/3">
@@ -69,16 +71,16 @@ export default function NdaApp({ coverPageTemplate, standardTermsTemplate }: Nda
             Based on the{" "}
             <a
               className="underline underline-offset-2 hover:text-neutral-900"
-              href="https://commonpaper.com/standards/mutual-nda/1.0/"
+              href="https://commonpaper.com"
               target="_blank"
               rel="noreferrer"
             >
-              Common Paper Mutual NDA
+              Common Paper {spec.name}
             </a>{" "}
             standard, free to use under CC BY 4.0.
           </p>
         </header>
-        <NdaForm values={values} onChange={setValues} />
+        <DocumentForm spec={spec} values={values} onChange={setValues} />
       </section>
 
       <section className="lg:w-1/3">
@@ -94,7 +96,7 @@ export default function NdaApp({ coverPageTemplate, standardTermsTemplate }: Nda
             </button>
             {downloadError ? <p className="text-sm text-red-600">{downloadError}</p> : null}
           </div>
-          <NdaPreview ref={previewRef} markdown={documentMarkdown} />
+          <DocumentPreview ref={previewRef} markdown={documentMarkdown} />
         </div>
       </section>
     </div>

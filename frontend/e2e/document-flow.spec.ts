@@ -16,11 +16,16 @@ test.describe("Mutual NDA creator", () => {
     await page.getByLabel("Email").fill("alice@example.com");
     await page.getByLabel("Password").fill("hunter2");
     await page.getByRole("button", { name: "Sign in" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Mutual NDA Creator" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "What do you need to create?" })).toBeVisible();
+
+    await page.getByRole("link", { name: /Mutual Non-Disclosure Agreement/ }).click();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Mutual Non-Disclosure Agreement Creator" })
+    ).toBeVisible();
   });
 
   test("fills the form, updates the live preview, and downloads a real PDF", async ({ page }) => {
-    await page.getByLabel("Effective Date", { exact: true }).fill("2026-08-06");
+    await page.getByLabel(/^Effective Date/).fill("2026-08-06");
     await page.getByLabel("Governing Law", { exact: false }).fill("Delaware");
     await page.getByLabel("Jurisdiction", { exact: false }).fill("courts located in New Castle, DE");
     // Deliberately includes the exact adversarial pattern (`$&`) that would
@@ -51,7 +56,7 @@ test.describe("Mutual NDA creator", () => {
     // pdf-parse returning empty text for it). The PDF checks below instead
     // verify that generation actually produced a real, non-trivial,
     // multi-page document from that DOM.
-    const preview = page.locator(".nda-document");
+    const preview = page.locator(".legal-document");
     await expect(preview).toContainText("Governing Law: Delaware");
     await expect(preview).toContainText("Alice Smith");
     await expect(preview).toContainText("Bob Jones");
@@ -93,5 +98,25 @@ test.describe("Mutual NDA creator", () => {
     expect(downloadPath).not.toBeNull();
     const buffer = await fs.readFile(downloadPath!);
     expect(buffer.subarray(0, 5).toString("latin1")).toBe("%PDF-");
+  });
+});
+
+test.describe("Cloud Service Agreement creator (generic-keyterms renderer)", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/login");
+    await page.getByLabel("Email").fill("alice@example.com");
+    await page.getByLabel("Password").fill("hunter2");
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.getByRole("link", { name: /^Cloud Service Agreement/ }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Cloud Service Agreement Creator" })).toBeVisible();
+  });
+
+  test("fills a field via the form and sees it reflected in the generic Key Terms preview", async ({ page }) => {
+    await page.getByLabel("Governing Law", { exact: false }).fill("Delaware");
+
+    const preview = page.locator(".legal-document");
+    await expect(preview).toContainText("Key Terms");
+    await expect(preview).toContainText("Governing Law: Delaware");
+    await expect(preview).not.toContainText("<span");
   });
 });

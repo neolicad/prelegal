@@ -72,5 +72,286 @@
       "filename": "templates/ai-addendum.md",
       "source": "https://github.com/CommonPaper/AI-Addendum"
     }
+  ],
+  "documentTypes": [
+    {
+      "slug": "mutual-nda",
+      "name": "Mutual Non-Disclosure Agreement",
+      "description": "Common Paper standard Mutual NDA, allowing two parties to exchange confidential information for a stated purpose.",
+      "renderer": "nda-coverpage",
+      "standardTermsFilename": "templates/mutual-nda.md",
+      "coverPageFilename": "templates/mutual-nda-coverpage.md",
+      "parties": [
+        { "key": "party1", "label": "Party 1" },
+        { "key": "party2", "label": "Party 2" }
+      ],
+      "fields": [
+        {
+          "key": "purpose",
+          "label": "Purpose",
+          "kind": "textarea",
+          "helpText": "How Confidential Information may be used",
+          "default": "Evaluating whether to enter into a business relationship with the other party."
+        },
+        { "key": "effectiveDate", "label": "Effective Date", "kind": "text", "helpText": "yyyy-mm-dd, the date the MNDA takes effect" },
+        {
+          "key": "mndaTermType",
+          "label": "MNDA Term",
+          "kind": "choice",
+          "helpText": "The length of this MNDA",
+          "default": "fixed",
+          "choices": [
+            { "value": "fixed", "label": "Expires N year(s) from Effective Date" },
+            { "value": "perpetual", "label": "Continues until terminated in accordance with the terms of the MNDA" }
+          ]
+        },
+        { "key": "mndaTermYears", "label": "MNDA Term (years)", "kind": "text", "default": "1", "helpText": "Used when MNDA Term is fixed-length" },
+        {
+          "key": "confidentialityTermType",
+          "label": "Term of Confidentiality",
+          "kind": "choice",
+          "helpText": "How long Confidential Information is protected",
+          "default": "fixed",
+          "choices": [
+            { "value": "fixed", "label": "Expires N year(s) from Effective Date" },
+            { "value": "perpetual", "label": "In perpetuity" }
+          ]
+        },
+        { "key": "confidentialityTermYears", "label": "Confidentiality Term (years)", "kind": "text", "default": "1", "helpText": "Used when Term of Confidentiality is fixed-length" },
+        { "key": "governingLaw", "label": "Governing Law", "kind": "text", "helpText": "The state whose laws govern the agreement" },
+        { "key": "jurisdiction", "label": "Jurisdiction", "kind": "text", "helpText": "e.g. \"courts located in New Castle, DE\"" },
+        { "key": "modifications", "label": "Modifications", "kind": "textarea", "helpText": "Optional -- any changes to the Standard Terms" }
+      ]
+    },
+    {
+      "slug": "csa",
+      "name": "Cloud Service Agreement",
+      "description": "Common Paper standard Cloud Service Agreement for selling and buying cloud software and SaaS products.",
+      "renderer": "generic-keyterms",
+      "standardTermsFilename": "templates/csa.md",
+      "parties": [
+        { "key": "provider", "label": "Provider" },
+        { "key": "customer", "label": "Customer" }
+      ],
+      "fields": [
+        { "key": "subscriptionPeriod", "label": "Subscription Period", "kind": "text", "helpText": "How long each subscription lasts, e.g. \"1 year\"" },
+        { "key": "technicalSupport", "label": "Technical Support", "kind": "textarea", "helpText": "The support Provider will give Customer" },
+        { "key": "useLimitations", "label": "Use Limitations", "kind": "textarea", "helpText": "Any limits on how Customer may use the Product" },
+        { "key": "paymentProcess", "label": "Payment Process", "kind": "textarea", "helpText": "Invoicing or automatic-payment terms" },
+        { "key": "orderDate", "label": "Order Date", "kind": "text" },
+        { "key": "nonRenewalNoticeDate", "label": "Non-Renewal Notice Date", "kind": "text", "helpText": "Deadline to give notice before auto-renewal" },
+        { "key": "effectiveDate", "label": "Effective Date", "kind": "text", "helpText": "When the Framework Terms start" },
+        { "key": "governingLaw", "label": "Governing Law", "kind": "text" },
+        { "key": "chosenCourts", "label": "Chosen Courts", "kind": "text" },
+        { "key": "dpa", "label": "Data Processing Agreement", "kind": "text", "helpText": "Reference to an attached DPA, if any" },
+        { "key": "additionalWarranties", "label": "Additional Warranties", "kind": "textarea" },
+        { "key": "generalCapAmount", "label": "General Cap Amount", "kind": "text", "helpText": "Overall liability cap" },
+        { "key": "increasedCapAmount", "label": "Increased Cap Amount", "kind": "text", "helpText": "Liability cap for Increased Claims" },
+        { "key": "increasedClaims", "label": "Increased Claims", "kind": "textarea", "helpText": "What counts as an Increased Claim" },
+        { "key": "unlimitedClaims", "label": "Unlimited Claims", "kind": "textarea", "helpText": "What counts as an Unlimited Claim" },
+        { "key": "providerCoveredClaims", "label": "Provider Covered Claims", "kind": "textarea", "helpText": "Claims Provider will indemnify Customer for" },
+        { "key": "customerCoveredClaims", "label": "Customer Covered Claims", "kind": "textarea", "helpText": "Claims Customer will indemnify Provider for" }
+      ]
+    },
+    {
+      "slug": "design-partner-agreement",
+      "name": "Design Partner Agreement",
+      "description": "Common Paper standard Design Partner Agreement granting early product access to a partner in exchange for feedback.",
+      "renderer": "generic-keyterms",
+      "standardTermsFilename": "templates/design-partner-agreement.md",
+      "parties": [
+        { "key": "provider", "label": "Provider" },
+        { "key": "partner", "label": "Partner" }
+      ],
+      "fields": [
+        { "key": "program", "label": "Program", "kind": "textarea", "helpText": "The design partner program being offered" },
+        { "key": "term", "label": "Term", "kind": "text", "helpText": "How long the agreement lasts" },
+        { "key": "fees", "label": "Fees", "kind": "text" },
+        { "key": "effectiveDate", "label": "Effective Date", "kind": "text" },
+        { "key": "governingLaw", "label": "Governing Law", "kind": "text" },
+        { "key": "chosenCourts", "label": "Chosen Courts", "kind": "text" }
+      ]
+    },
+    {
+      "slug": "sla",
+      "name": "Service Level Agreement",
+      "description": "Common Paper Service Level Agreement Standard Terms, designed to be used alongside the Cloud Service Agreement to define uptime and response time commitments.",
+      "renderer": "generic-keyterms",
+      "standardTermsFilename": "templates/sla.md",
+      "parties": [
+        { "key": "provider", "label": "Provider" },
+        { "key": "customer", "label": "Customer" }
+      ],
+      "fields": [
+        { "key": "subscriptionPeriod", "label": "Subscription Period", "kind": "text" },
+        { "key": "targetUptime", "label": "Target Uptime", "kind": "text", "helpText": "e.g. \"99.9%\"" },
+        { "key": "uptimeCredit", "label": "Uptime Credit", "kind": "textarea", "helpText": "Credit owed if uptime falls below target" },
+        { "key": "targetResponseTime", "label": "Target Response Time", "kind": "text" },
+        { "key": "responseTimeCredit", "label": "Response Time Credit", "kind": "textarea", "helpText": "Credit owed if response time exceeds target" },
+        { "key": "supportChannel", "label": "Support Channel", "kind": "text", "helpText": "How Customer can reach support" },
+        { "key": "scheduledDowntime", "label": "Scheduled Downtime", "kind": "textarea", "helpText": "Planned maintenance windows excluded from uptime" }
+      ]
+    },
+    {
+      "slug": "psa",
+      "name": "Professional Services Agreement",
+      "description": "Common Paper standard Professional Services Agreement Standard Terms governing statements of work and deliverables between a provider and customer.",
+      "renderer": "generic-keyterms",
+      "standardTermsFilename": "templates/psa.md",
+      "parties": [
+        { "key": "provider", "label": "Provider" },
+        { "key": "customer", "label": "Customer" }
+      ],
+      "fields": [
+        { "key": "sowTerm", "label": "SOW Term", "kind": "text", "helpText": "How long each Statement of Work lasts" },
+        { "key": "effectiveDate", "label": "Effective Date", "kind": "text" },
+        { "key": "customerPolicies", "label": "Customer Policies", "kind": "textarea", "helpText": "Any Customer policies Provider must follow onsite" },
+        { "key": "securityPolicy", "label": "Security Policy", "kind": "textarea" },
+        { "key": "insuranceMinimums", "label": "Insurance Minimums", "kind": "textarea" },
+        { "key": "additionalWarranties", "label": "Additional Warranties", "kind": "textarea" },
+        { "key": "dpa", "label": "Data Processing Agreement", "kind": "text", "helpText": "Reference to an attached DPA, if any" },
+        { "key": "governingLaw", "label": "Governing Law", "kind": "text" },
+        { "key": "chosenCourts", "label": "Chosen Courts", "kind": "text" },
+        { "key": "generalCapAmount", "label": "General Cap Amount", "kind": "text" },
+        { "key": "increasedCapAmount", "label": "Increased Cap Amount", "kind": "text" },
+        { "key": "increasedClaims", "label": "Increased Claims", "kind": "textarea" },
+        { "key": "unlimitedClaims", "label": "Unlimited Claims", "kind": "textarea" },
+        { "key": "providerCoveredClaims", "label": "Provider Covered Claims", "kind": "textarea" },
+        { "key": "customerCoveredClaims", "label": "Customer Covered Claims", "kind": "textarea" }
+      ]
+    },
+    {
+      "slug": "dpa",
+      "name": "Data Processing Agreement",
+      "description": "Common Paper Data Processing Agreement Standard Terms governing the processing of personal data between a provider and customer.",
+      "renderer": "generic-keyterms",
+      "standardTermsFilename": "templates/dpa.md",
+      "parties": [
+        { "key": "provider", "label": "Provider" },
+        { "key": "customer", "label": "Customer" }
+      ],
+      "fields": [
+        { "key": "agreement", "label": "Underlying Agreement", "kind": "text", "helpText": "The agreement this DPA supplements" },
+        { "key": "categoriesOfDataSubjects", "label": "Categories of Data Subjects", "kind": "textarea" },
+        { "key": "categoriesOfPersonalData", "label": "Categories of Personal Data", "kind": "textarea" },
+        { "key": "specialCategoryData", "label": "Special Category Data", "kind": "textarea" },
+        { "key": "specialCategoryDataRestrictions", "label": "Special Category Data Restrictions or Safeguards", "kind": "textarea" },
+        { "key": "natureAndPurposeOfProcessing", "label": "Nature and Purpose of Processing", "kind": "textarea" },
+        { "key": "durationOfProcessing", "label": "Duration of Processing", "kind": "text" },
+        { "key": "frequencyOfTransfer", "label": "Frequency of Transfer", "kind": "text" },
+        { "key": "approvedSubprocessors", "label": "Approved Subprocessors", "kind": "textarea" },
+        { "key": "governingMemberState", "label": "Governing Member State", "kind": "text" },
+        { "key": "securityPolicy", "label": "Security Policy", "kind": "textarea" },
+        { "key": "providerSecurityContact", "label": "Provider Security Contact", "kind": "text" }
+      ]
+    },
+    {
+      "slug": "software-license-agreement",
+      "name": "Software License Agreement",
+      "description": "Common Paper standard Software License Agreement Standard Terms for licensing on-premises or self-hosted software.",
+      "renderer": "generic-keyterms",
+      "standardTermsFilename": "templates/software-license-agreement.md",
+      "parties": [
+        { "key": "provider", "label": "Provider" },
+        { "key": "customer", "label": "Customer" }
+      ],
+      "fields": [
+        { "key": "subscriptionPeriod", "label": "Subscription Period", "kind": "text" },
+        { "key": "permittedUses", "label": "Permitted Uses", "kind": "textarea" },
+        { "key": "licenseLimits", "label": "License Limits", "kind": "textarea" },
+        { "key": "paymentProcess", "label": "Payment Process", "kind": "textarea" },
+        { "key": "orderDate", "label": "Order Date", "kind": "text" },
+        { "key": "nonRenewalNoticeDate", "label": "Non-Renewal Notice Date", "kind": "text" },
+        { "key": "effectiveDate", "label": "Effective Date", "kind": "text" },
+        { "key": "deletionProcedure", "label": "Deletion Procedure", "kind": "textarea" },
+        { "key": "warrantyPeriod", "label": "Warranty Period", "kind": "text" },
+        { "key": "additionalWarranties", "label": "Additional Warranties", "kind": "textarea" },
+        { "key": "governingLaw", "label": "Governing Law", "kind": "text" },
+        { "key": "chosenCourts", "label": "Chosen Courts", "kind": "text" },
+        { "key": "generalCapAmount", "label": "General Cap Amount", "kind": "text" },
+        { "key": "increasedCapAmount", "label": "Increased Cap Amount", "kind": "text" },
+        { "key": "increasedClaims", "label": "Increased Claims", "kind": "textarea" },
+        { "key": "unlimitedClaims", "label": "Unlimited Claims", "kind": "textarea" },
+        { "key": "providerCoveredClaims", "label": "Provider Covered Claims", "kind": "textarea" },
+        { "key": "customerCoveredClaims", "label": "Customer Covered Claims", "kind": "textarea" }
+      ]
+    },
+    {
+      "slug": "partnership-agreement",
+      "name": "Partnership Agreement",
+      "description": "Common Paper standard Partnership Agreement Standard Terms for structuring a business partnership between two companies.",
+      "renderer": "generic-keyterms",
+      "standardTermsFilename": "templates/partnership-agreement.md",
+      "parties": [
+        { "key": "company", "label": "Company" },
+        { "key": "partner", "label": "Partner" }
+      ],
+      "fields": [
+        { "key": "effectiveDate", "label": "Effective Date", "kind": "text" },
+        { "key": "brandGuidelines", "label": "Brand Guidelines", "kind": "textarea" },
+        { "key": "dpa", "label": "Data Processing Agreement", "kind": "text", "helpText": "Reference to an attached DPA, if any" },
+        { "key": "additionalWarranties", "label": "Additional Warranties", "kind": "textarea" },
+        { "key": "governingLaw", "label": "Governing Law", "kind": "text" },
+        { "key": "chosenCourts", "label": "Chosen Courts", "kind": "text" },
+        { "key": "generalCapAmount", "label": "General Cap Amount", "kind": "text" },
+        { "key": "increasedCapAmount", "label": "Increased Cap Amount", "kind": "text" },
+        { "key": "increasedClaims", "label": "Increased Claims", "kind": "textarea" },
+        { "key": "unlimitedClaims", "label": "Unlimited Claims", "kind": "textarea" },
+        { "key": "companyCoveredClaims", "label": "Company Covered Claims", "kind": "textarea" },
+        { "key": "partnerCoveredClaims", "label": "Partner Covered Claims", "kind": "textarea" }
+      ]
+    },
+    {
+      "slug": "pilot-agreement",
+      "name": "Pilot Agreement",
+      "description": "Common Paper standard Pilot Agreement Standard Terms, a short-term trial or evaluation contract used before committing to a full commercial agreement.",
+      "renderer": "generic-keyterms",
+      "standardTermsFilename": "templates/pilot-agreement.md",
+      "parties": [
+        { "key": "provider", "label": "Provider" },
+        { "key": "customer", "label": "Customer" }
+      ],
+      "fields": [
+        { "key": "pilotPeriod", "label": "Pilot Period", "kind": "text", "helpText": "How long the pilot lasts" },
+        { "key": "effectiveDate", "label": "Effective Date", "kind": "text" },
+        { "key": "governingLaw", "label": "Governing Law", "kind": "text" },
+        { "key": "chosenCourts", "label": "Chosen Courts", "kind": "text" },
+        { "key": "generalCapAmount", "label": "General Cap Amount", "kind": "text" }
+      ]
+    },
+    {
+      "slug": "baa",
+      "name": "Business Associate Agreement",
+      "description": "Common Paper standard Business Associate Agreement Standard Terms addressing HIPAA obligations between a covered entity and a business associate.",
+      "renderer": "generic-keyterms",
+      "standardTermsFilename": "templates/baa.md",
+      "parties": [
+        { "key": "company", "label": "Company" },
+        { "key": "provider", "label": "Provider" }
+      ],
+      "fields": [
+        { "key": "agreement", "label": "Underlying Agreement", "kind": "text", "helpText": "The agreement this BAA supplements" },
+        { "key": "baaEffectiveDate", "label": "BAA Effective Date", "kind": "text" },
+        { "key": "breachNotificationPeriod", "label": "Breach Notification Period", "kind": "text" },
+        { "key": "limitations", "label": "Limitations", "kind": "textarea" }
+      ]
+    },
+    {
+      "slug": "ai-addendum",
+      "name": "AI Addendum",
+      "description": "Common Paper standard AI Addendum Standard Terms governing the use of AI features and services as part of a Product.",
+      "renderer": "generic-keyterms",
+      "standardTermsFilename": "templates/ai-addendum.md",
+      "parties": [
+        { "key": "provider", "label": "Provider" },
+        { "key": "customer", "label": "Customer" }
+      ],
+      "fields": [
+        { "key": "trainingData", "label": "Training Data", "kind": "textarea", "helpText": "Data Provider may use to train Models, if any" },
+        { "key": "trainingPurposes", "label": "Training Purposes", "kind": "textarea" },
+        { "key": "trainingRestrictions", "label": "Training Restrictions", "kind": "textarea" },
+        { "key": "improvementRestrictions", "label": "Improvement Restrictions", "kind": "textarea" }
+      ]
+    }
   ]
 }
