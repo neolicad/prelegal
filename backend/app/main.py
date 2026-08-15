@@ -2,16 +2,18 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.auth import SESSION_COOKIE, has_session
+from app.auth import SESSION_COOKIE, get_optional_user_id
 from app.db import init_db
 from app.document_types import get_document_type
 from app.env import load_root_env
+from app.routers.auth import router as auth_router
 from app.routers.document_chat import router as document_chat_router
+from app.routers.documents import router as documents_router
 
 load_root_env()
 
@@ -38,7 +40,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(auth_router)
 app.include_router(document_chat_router)
+app.include_router(documents_router)
 
 
 @app.get("/api/health")
@@ -47,17 +51,31 @@ def health():
 
 
 @app.get("/login")
-def login_page(request: Request):
-    if has_session(request):
+def login_page(user_id: int | None = Depends(get_optional_user_id)):
+    if user_id is not None:
         return RedirectResponse(url="/")
     return FileResponse(FRONTEND_DIST / "login.html")
 
 
+@app.get("/signup")
+def signup_page(user_id: int | None = Depends(get_optional_user_id)):
+    if user_id is not None:
+        return RedirectResponse(url="/")
+    return FileResponse(FRONTEND_DIST / "signup.html")
+
+
 @app.get("/")
-def index(request: Request):
-    if has_session(request):
+def index(user_id: int | None = Depends(get_optional_user_id)):
+    if user_id is not None:
         return FileResponse(FRONTEND_DIST / "index.html")
     return RedirectResponse(url="/login")
+
+
+@app.get("/my-documents")
+def my_documents_page(user_id: int | None = Depends(get_optional_user_id)):
+    if user_id is None:
+        return RedirectResponse(url="/login")
+    return FileResponse(FRONTEND_DIST / "my-documents.html")
 
 
 # StaticFiles below would otherwise serve these two filenames directly,
@@ -70,6 +88,16 @@ def index_html():
 @app.get("/login.html")
 def login_html():
     return RedirectResponse(url="/login")
+
+
+@app.get("/signup.html")
+def signup_html():
+    return RedirectResponse(url="/signup")
+
+
+@app.get("/my-documents.html")
+def my_documents_html():
+    return RedirectResponse(url="/my-documents")
 
 
 # Registered before the bare "/documents/{slug}" route below: FastAPI tries
@@ -88,8 +116,8 @@ def document_page_html(slug: str):
 # .html file. An explicit route here sidesteps that and, like "/" and
 # "/login" above, keeps these pages behind the cookie gate.
 @app.get("/documents/{slug}")
-def document_page(slug: str, request: Request):
-    if not has_session(request):
+def document_page(slug: str, user_id: int | None = Depends(get_optional_user_id)):
+    if user_id is None:
         return RedirectResponse(url="/login")
     get_document_type(slug)  # raises a 404 HTTPException for an unknown slug
     return FileResponse(FRONTEND_DIST / "documents" / f"{slug}.html")

@@ -25,3 +25,18 @@ class ChatTurnRequest(BaseModel):
 class MatchRequest(BaseModel):
     message: str
     history: list[ChatMessage] = []
+
+
+class SignupRequest(BaseModel):
+    email: str
+    password: str
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class SaveDocumentRequest(BaseModel):
+    slug: str
+    values: dict[str, Any] = {}

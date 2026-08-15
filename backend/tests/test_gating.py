@@ -1,18 +1,24 @@
 import pytest
 
 import app.main as main
-from app.main import SESSION_COOKIE
 
 
 @pytest.fixture
 def frontend_dist(tmp_path, monkeypatch):
     (tmp_path / "index.html").write_text("<html>app</html>")
     (tmp_path / "login.html").write_text("<html>login</html>")
+    (tmp_path / "signup.html").write_text("<html>signup</html>")
+    (tmp_path / "my-documents.html").write_text("<html>my documents</html>")
     documents_dir = tmp_path / "documents"
     documents_dir.mkdir()
     (documents_dir / "mutual-nda.html").write_text("<html>mutual nda page</html>")
     monkeypatch.setattr(main, "FRONTEND_DIST", tmp_path)
     return tmp_path
+
+
+def _sign_up(client, email="a@example.com"):
+    response = client.post("/api/auth/signup", json={"email": email, "password": "hunter2"})
+    assert response.status_code == 200
 
 
 def test_root_redirects_to_login_without_session_cookie(client, frontend_dist):
@@ -23,7 +29,7 @@ def test_root_redirects_to_login_without_session_cookie(client, frontend_dist):
 
 
 def test_root_serves_app_with_session_cookie(client, frontend_dist):
-    client.cookies.set(SESSION_COOKIE, "1")
+    _sign_up(client)
 
     response = client.get("/")
 
@@ -39,12 +45,44 @@ def test_login_page_serves_when_no_session(client, frontend_dist):
 
 
 def test_login_page_redirects_to_root_when_already_signed_in(client, frontend_dist):
-    client.cookies.set(SESSION_COOKIE, "1")
+    _sign_up(client)
 
     response = client.get("/login", follow_redirects=False)
 
     assert response.status_code == 307
     assert response.headers["location"] == "/"
+
+
+def test_signup_page_serves_when_no_session(client, frontend_dist):
+    response = client.get("/signup")
+
+    assert response.status_code == 200
+    assert "signup" in response.text
+
+
+def test_signup_page_redirects_to_root_when_already_signed_in(client, frontend_dist):
+    _sign_up(client)
+
+    response = client.get("/signup", follow_redirects=False)
+
+    assert response.status_code == 307
+    assert response.headers["location"] == "/"
+
+
+def test_my_documents_page_redirects_to_login_without_session(client, frontend_dist):
+    response = client.get("/my-documents", follow_redirects=False)
+
+    assert response.status_code == 307
+    assert response.headers["location"] == "/login"
+
+
+def test_my_documents_page_serves_with_session(client, frontend_dist):
+    _sign_up(client)
+
+    response = client.get("/my-documents")
+
+    assert response.status_code == 200
+    assert "my documents" in response.text
 
 
 def test_index_html_does_not_bypass_the_session_check(client):
@@ -63,6 +101,20 @@ def test_login_html_does_not_bypass_the_already_signed_in_check(client):
     assert response.headers["location"] == "/login"
 
 
+def test_signup_html_does_not_bypass_the_already_signed_in_check(client):
+    response = client.get("/signup.html", follow_redirects=False)
+
+    assert response.status_code == 307
+    assert response.headers["location"] == "/signup"
+
+
+def test_my_documents_html_does_not_bypass_the_session_check(client):
+    response = client.get("/my-documents.html", follow_redirects=False)
+
+    assert response.status_code == 307
+    assert response.headers["location"] == "/my-documents"
+
+
 # The exported Next.js build puts each document type's page at
 # documents/<slug>.html alongside a same-named documents/<slug>/ directory of
 # prefetch data with no index.html in it, which StaticFiles alone can't
@@ -75,7 +127,7 @@ def test_document_page_redirects_to_login_without_session_cookie(client, fronten
 
 
 def test_document_page_serves_when_session_cookie_present(client, frontend_dist):
-    client.cookies.set(SESSION_COOKIE, "1")
+    _sign_up(client)
 
     response = client.get("/documents/mutual-nda")
 
@@ -84,7 +136,7 @@ def test_document_page_serves_when_session_cookie_present(client, frontend_dist)
 
 
 def test_document_page_404s_for_an_unknown_slug(client, frontend_dist):
-    client.cookies.set(SESSION_COOKIE, "1")
+    _sign_up(client)
 
     response = client.get("/documents/does-not-exist")
 
