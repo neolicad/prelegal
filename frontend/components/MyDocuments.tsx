@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { listSavedDocuments, type SavedDocumentSummary } from "@/lib/api";
+import { errorTextClass } from "@/lib/ui";
 
 function formatCreatedAt(sqliteDatetime: string): string {
   // SQLite's datetime('now') returns "YYYY-MM-DD HH:MM:SS" in UTC with no
@@ -30,7 +31,7 @@ export default function MyDocuments() {
         <p className="mt-2 text-sm text-brand-gray">Documents you&rsquo;ve previously created, saved when downloaded.</p>
       </header>
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className={errorTextClass}>{error}</p> : null}
 
       {documents && documents.length === 0 ? (
         <p className="text-sm text-neutral-600">

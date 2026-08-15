@@ -31,6 +31,24 @@ def test_signup_rejects_a_duplicate_email(client):
     assert response.status_code == 409
 
 
+def test_concurrent_signups_for_the_same_email_return_409_not_500(client):
+    # Regression test: a check-then-insert (SELECT then INSERT) has a race
+    # window where two concurrent signups for the same new email can both
+    # pass the check, so the second INSERT hits users.email's UNIQUE
+    # constraint -- that must surface as a 409, not an unhandled 500.
+    from concurrent.futures import ThreadPoolExecutor
+
+    def signup(_):
+        return client.post("/api/auth/signup", json={"email": "race@example.com", "password": "x"})
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        responses = list(pool.map(signup, range(8)))
+
+    statuses = [response.status_code for response in responses]
+    assert statuses.count(200) == 1
+    assert statuses.count(409) == 7
+
+
 def test_login_succeeds_with_correct_credentials(client):
     client.post("/api/auth/signup", json={"email": "a@example.com", "password": "hunter2"})
     client.cookies.clear()

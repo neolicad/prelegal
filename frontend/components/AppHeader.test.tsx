@@ -6,6 +6,9 @@ import AppHeader from "./AppHeader";
 vi.mock("@/lib/api", () => ({
   getCurrentUser: vi.fn().mockResolvedValue({ email: "alice@example.com" }),
   logout: vi.fn().mockResolvedValue(undefined),
+  navigateFullPage: (path: string) => {
+    window.location.href = path;
+  },
 }));
 
 const { logout } = await import("@/lib/api");

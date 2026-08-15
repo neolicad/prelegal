@@ -10,6 +10,16 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
 const FALLBACK_ERROR_MESSAGE = "Something went wrong. Please try again.";
 
+/**
+ * A full page load (not client-side routing) so the backend's cookie check
+ * in GET / actually runs -- see backend/app/main.py. Used after login/signup
+ * (to land on the now-authenticated /), sign-out (to land on /login), and a
+ * 401 from any other call (below).
+ */
+export function navigateFullPage(path: string): void {
+  window.location.href = path;
+}
+
 export class DocumentChatApiError extends Error {
   status: number;
 
@@ -50,10 +60,7 @@ async function request<T>(
   });
 
   if (response.status === 401 && redirectOn401) {
-    // Full page navigation, matching LoginForm.tsx's pattern -- the backend's
-    // cookie check must actually run server-side, not just a client route change.
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-    window.location.href = "/login";
+    navigateFullPage("/login");
     throw new DocumentChatApiError("Not authenticated", 401);
   }
   if (!response.ok) {

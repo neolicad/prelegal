@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getCurrentUser, logout } from "@/lib/api";
+import { getCurrentUser, logout, navigateFullPage } from "@/lib/api";
 
 /**
  * Persistent nav shown on every authenticated page (see app/(app)/layout.tsx)
@@ -20,10 +20,7 @@ export default function AppHeader() {
 
   async function handleSignOut() {
     await logout();
-    // Full page load (not client-side routing) so the backend's cookie
-    // check in GET / actually runs -- see backend/app/main.py.
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-    window.location.href = "/login";
+    navigateFullPage("/login");
   }
 
   return (

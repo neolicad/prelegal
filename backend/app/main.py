@@ -64,18 +64,21 @@ def signup_page(user_id: int | None = Depends(get_optional_user_id)):
     return FileResponse(FRONTEND_DIST / "signup.html")
 
 
+def _gated_file(user_id: int | None, filename: str) -> FileResponse | RedirectResponse:
+    """Serves a frontend page if signed in, else redirects to /login."""
+    if user_id is None:
+        return RedirectResponse(url="/login")
+    return FileResponse(FRONTEND_DIST / filename)
+
+
 @app.get("/")
 def index(user_id: int | None = Depends(get_optional_user_id)):
-    if user_id is not None:
-        return FileResponse(FRONTEND_DIST / "index.html")
-    return RedirectResponse(url="/login")
+    return _gated_file(user_id, "index.html")
 
 
 @app.get("/my-documents")
 def my_documents_page(user_id: int | None = Depends(get_optional_user_id)):
-    if user_id is None:
-        return RedirectResponse(url="/login")
-    return FileResponse(FRONTEND_DIST / "my-documents.html")
+    return _gated_file(user_id, "my-documents.html")
 
 
 # StaticFiles below would otherwise serve these two filenames directly,
@@ -120,7 +123,7 @@ def document_page(slug: str, user_id: int | None = Depends(get_optional_user_id)
     if user_id is None:
         return RedirectResponse(url="/login")
     get_document_type(slug)  # raises a 404 HTTPException for an unknown slug
-    return FileResponse(FRONTEND_DIST / "documents" / f"{slug}.html")
+    return _gated_file(user_id, f"documents/{slug}.html")
 
 
 # Serves the exported Next.js build's JS/CSS chunks and other static assets

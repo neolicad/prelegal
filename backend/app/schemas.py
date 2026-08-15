@@ -1,4 +1,4 @@
-"""Pydantic models shared by the document chat endpoints.
+"""Pydantic request models shared by the document chat, auth, and document routers.
 
 `values`/`updates` are typed loosely here (plain dicts) because their exact
 shape depends on which document type's fields and parties are involved --

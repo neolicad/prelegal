@@ -33,15 +33,17 @@ def _set_session_cookie(response: Response, token: str) -> None:
 
 @router.post("/signup")
 def signup(payload: SignupRequest, response: Response, connection: sqlite3.Connection = Depends(get_db)) -> dict:
-    existing = connection.execute("SELECT id FROM users WHERE email = ?", (payload.email,)).fetchone()
-    if existing:
-        raise HTTPException(status_code=409, detail="An account with that email already exists")
-
-    cursor = connection.execute(
-        "INSERT INTO users (email, password_hash) VALUES (?, ?)",
-        (payload.email, hash_password(payload.password)),
-    )
-    connection.commit()
+    # Relies on users.email's UNIQUE constraint rather than a check-then-insert
+    # (SELECT then INSERT) -- the latter has a race window where two
+    # concurrent signups for the same new email can both pass the check.
+    try:
+        cursor = connection.execute(
+            "INSERT INTO users (email, password_hash) VALUES (?, ?)",
+            (payload.email, hash_password(payload.password)),
+        )
+        connection.commit()
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=409, detail="An account with that email already exists") from None
     token = create_session(connection, cursor.lastrowid)
     _set_session_cookie(response, token)
     return {"email": payload.email}

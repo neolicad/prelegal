@@ -9,6 +9,7 @@ import { getSavedDocument, saveDocument } from "@/lib/api";
 import { defaultFormValues, getPartyValue, type DocumentFormValues } from "@/lib/document-form";
 import { renderDocument, type DocumentTemplates } from "@/lib/render-document";
 import { slugify } from "@/lib/slugify";
+import { errorTextClass } from "@/lib/ui";
 import type { DocumentTypeSpec } from "@/lib/document-types";
 
 interface DocumentAppProps {
@@ -50,17 +51,18 @@ export default function DocumentApp({ spec, templates }: DocumentAppProps) {
 
     setIsDownloading(true);
     setDownloadError(null);
-    try {
-      // Saving is best-effort and shouldn't block the download the user
-      // asked for -- a save failure surfaces via downloadError, not a thrown
-      // rejection that skips PDF generation below.
-      try {
-        await saveDocument(spec.slug, values);
-      } catch (error) {
-        console.error("Failed to save document to history", error);
-        setDownloadError("Downloaded, but couldn't save this document to My Documents.");
-      }
 
+    // Saving is best-effort and shouldn't block the download the user asked
+    // for -- kept as its own try/catch, separate from PDF generation below,
+    // so a save failure surfaces via downloadError without skipping it.
+    try {
+      await saveDocument(spec.slug, values);
+    } catch (error) {
+      console.error("Failed to save document to history", error);
+      setDownloadError("Downloaded, but couldn't save this document to My Documents.");
+    }
+
+    try {
       const html2pdf = (await import("html2pdf.js")).default;
       const partySlugs = spec.parties.map((party) => slugify(getPartyValue(values, party.key).company));
       const filename = `${[...partySlugs, spec.slug].join("-")}.pdf`;
@@ -119,7 +121,7 @@ export default function DocumentApp({ spec, templates }: DocumentAppProps) {
             <Button type="button" onClick={() => void handleDownload()} disabled={isDownloading} className="self-start">
               {isDownloading ? "Preparing PDF…" : "Download PDF"}
             </Button>
-            {downloadError ? <p className="text-sm text-red-600">{downloadError}</p> : null}
+            {downloadError ? <p className={errorTextClass}>{downloadError}</p> : null}
           </div>
           <p className="text-xs text-brand-gray">
             This is a draft only. Downloading also saves it to{" "}
