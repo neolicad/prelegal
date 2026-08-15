@@ -48,4 +48,24 @@ test.describe("Mutual NDA chat", () => {
       page.getByText("The AI assistant is temporarily unavailable. Please try again.")
     ).toBeVisible();
   });
+
+  test("auto-scrolls the chat panel to the latest message once it overflows", async ({ page }) => {
+    let replyCount = 0;
+    await page.route("**/api/documents/mutual-nda/chat", async (route) => {
+      replyCount += 1;
+      await route.fulfill({ json: { reply: `Reply number ${replyCount}.`, updates: {} } });
+    });
+
+    // Enough turns to overflow the panel's fixed height and require scrolling.
+    // The first reply's bubble is asserted out of the viewport below, so the
+    // panel must genuinely overflow -- not just happen to fit everything.
+    for (let i = 1; i <= 10; i++) {
+      await page.getByLabel("Message").fill(`Message ${i}`);
+      await page.getByRole("button", { name: "Send" }).click();
+      await expect(page.getByText(`Reply number ${i}.`)).toBeVisible();
+    }
+
+    await expect(page.getByText("Reply number 1.")).not.toBeInViewport();
+    await expect(page.getByText("Reply number 10.")).toBeInViewport();
+  });
 });

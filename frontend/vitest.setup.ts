@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { afterEach } from "vitest";
+import { afterEach, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
 
 // React Testing Library normally auto-cleans up after each test when it
@@ -9,3 +9,7 @@ import { cleanup } from "@testing-library/react";
 afterEach(() => {
   cleanup();
 });
+
+// jsdom doesn't implement scrollIntoView (used by ChatMessageList's
+// auto-scroll) -- stub it globally rather than per test file.
+Element.prototype.scrollIntoView = vi.fn();

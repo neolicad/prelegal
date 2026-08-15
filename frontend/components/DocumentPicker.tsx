@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import ChatBubble from "./ChatBubble";
 import ChatInputForm from "./ChatInputForm";
+import ChatMessageList from "./ChatMessageList";
 import { postDocumentMatchTurn, DocumentChatApiError } from "@/lib/api";
 import type { ChatMessage } from "@/lib/document-chat";
 import type { DocumentTypeSpec } from "@/lib/document-types";
@@ -64,12 +64,7 @@ export default function DocumentPicker({ documentTypes }: DocumentPickerProps) {
       </header>
 
       <section className="flex flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-col gap-3">
-          {messages.map((message, index) => (
-            <ChatBubble key={index} message={message} />
-          ))}
-          {isSending ? <ChatBubble message={{ role: "assistant", content: "Thinking…" }} /> : null}
-        </div>
+        <ChatMessageList messages={messages} isSending={isSending} className="flex flex-col gap-3" />
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
         <ChatInputForm
           value={input}

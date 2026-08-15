@@ -72,6 +72,8 @@ describe("DocumentPicker", () => {
 
     expect(await screen.findByText("Sounds like a CSA.")).toBeInTheDocument();
     expect(pushMock).toHaveBeenCalledWith("/documents/csa");
+    // Regression test: the reply must actually scroll into view, not just render.
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
   });
 
   it("does not navigate when nothing matches, and shows the explanation instead", async () => {

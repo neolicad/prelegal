@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, type Dispatch, type SetStateAction } from "react";
-import ChatBubble from "./ChatBubble";
 import ChatInputForm from "./ChatInputForm";
+import ChatMessageList from "./ChatMessageList";
 import { postDocumentChatTurn, DocumentChatApiError } from "@/lib/api";
 import { mergeDocumentFieldUpdates, type ChatMessage } from "@/lib/document-chat";
 import type { DocumentFormValues } from "@/lib/document-form";
@@ -55,14 +55,11 @@ export default function DocumentChatPanel({ spec, values, onValuesChange }: Docu
 
   return (
     <div className="flex h-[calc(100vh-10rem)] flex-col gap-4">
-      <div className="flex-1 overflow-y-auto rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-col gap-3">
-          {messages.map((chatMessage, index) => (
-            <ChatBubble key={index} message={chatMessage} />
-          ))}
-          {isSending ? <ChatBubble message={{ role: "assistant", content: "Thinking…" }} /> : null}
-        </div>
-      </div>
+      <ChatMessageList
+        messages={messages}
+        isSending={isSending}
+        className="flex flex-1 flex-col gap-3 overflow-y-auto rounded-lg border border-neutral-200 bg-white p-4 shadow-sm"
+      />
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       <ChatInputForm
         value={input}
