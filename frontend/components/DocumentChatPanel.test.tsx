@@ -72,6 +72,24 @@ describe("DocumentChatPanel", () => {
     expect(updater(values)).toEqual(expect.objectContaining({ governingLaw: "Delaware" }));
   });
 
+  it("calls onFieldsUpdated with the turn's raw updates, so the form column can scroll to them", async () => {
+    postDocumentChatTurnMock.mockResolvedValue({ reply: "Noted.", updates: { governingLaw: "Delaware" } });
+    const onFieldsUpdated = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <DocumentChatPanel
+        spec={ndaSpec}
+        values={values}
+        onValuesChange={vi.fn()}
+        onFieldsUpdated={onFieldsUpdated}
+      />
+    );
+
+    await sendMessage(user, "Governing law is Delaware");
+
+    await waitFor(() => expect(onFieldsUpdated).toHaveBeenCalledWith({ governingLaw: "Delaware" }));
+  });
+
   it("does not drop a concurrent manual edit made while a chat request is in flight", async () => {
     // Regression test for a stale-closure bug: sendMessage must merge
     // against the latest values (via a functional updater), not a snapshot

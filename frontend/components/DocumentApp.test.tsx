@@ -30,7 +30,7 @@ vi.mock("@/lib/api", () => ({
   DocumentChatApiError: class DocumentChatApiError extends Error {},
 }));
 
-const { saveDocument, getSavedDocument } = await import("@/lib/api");
+const { saveDocument, getSavedDocument, postDocumentChatTurn } = await import("@/lib/api");
 
 async function fillRequiredNdaFields(user: ReturnType<typeof userEvent.setup>) {
   // userEvent.type doesn't support jsdom's <input type="date"> (there's no
@@ -84,6 +84,23 @@ describe("DocumentApp", () => {
     // The form's own "Key Terms" fieldset legend also matches this text, so
     // scope to the rendered preview's heading specifically.
     expect(screen.getByRole("heading", { name: "Key Terms" })).toBeInTheDocument();
+  });
+
+  it("scrolls the Key Terms column to a field once the AI's reply fills it in", async () => {
+    vi.mocked(postDocumentChatTurn).mockResolvedValueOnce({
+      reply: "Got it — governing law is Delaware.",
+      updates: { governingLaw: "Delaware" },
+    });
+    const scrollIntoViewMock = Element.prototype.scrollIntoView as ReturnType<typeof vi.fn>;
+    scrollIntoViewMock.mockClear();
+    const user = userEvent.setup();
+    render(<DocumentApp spec={ndaSpec} templates={ndaTemplates} />);
+
+    await user.type(screen.getByLabelText("Message"), "Governing law is Delaware");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    await waitFor(() => expect(screen.getByLabelText("Governing Law", { exact: false })).toHaveValue("Delaware"));
+    expect(scrollIntoViewMock).toHaveBeenCalledWith({ block: "center", behavior: "smooth" });
   });
 
   it("attempts PDF generation even when every field is left blank", async () => {

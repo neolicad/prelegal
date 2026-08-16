@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Button from "./Button";
 import DocumentChatPanel from "./DocumentChatPanel";
-import DocumentForm from "./DocumentForm";
+import DocumentForm, { type ScrollToFieldRequest } from "./DocumentForm";
 import DocumentPreview from "./DocumentPreview";
 import { getSavedDocument, saveDocument } from "@/lib/api";
+import type { DocumentFieldUpdates } from "@/lib/document-chat";
 import { defaultFormValues, getPartyValue, type DocumentFormValues } from "@/lib/document-form";
 import { renderDocument, type DocumentTemplates } from "@/lib/render-document";
 import { slugify } from "@/lib/slugify";
@@ -21,7 +22,17 @@ export default function DocumentApp({ spec, templates }: DocumentAppProps) {
   const [values, setValues] = useState<DocumentFormValues>(() => defaultFormValues(spec));
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [scrollToField, setScrollToField] = useState<ScrollToFieldRequest | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+
+  // Scrolls the Key Terms column to whichever field/party the AI's last
+  // reply actually filled in -- otherwise a field below the fold updates
+  // out of sight, in a column that now scrolls independently of the page.
+  function handleFieldsUpdated(updates: DocumentFieldUpdates) {
+    const key = Object.keys(updates).find((k) => updates[k]);
+    if (!key) return;
+    setScrollToField((current) => ({ key, nonce: (current?.nonce ?? 0) + 1 }));
+  }
 
   // Resuming a saved document (see MyDocuments.tsx) passes its id via a query
   // param rather than a dynamic route segment, since this page is statically
@@ -94,7 +105,12 @@ export default function DocumentApp({ spec, templates }: DocumentAppProps) {
             as you go.
           </p>
         </header>
-        <DocumentChatPanel spec={spec} values={values} onValuesChange={setValues} />
+        <DocumentChatPanel
+          spec={spec}
+          values={values}
+          onValuesChange={setValues}
+          onFieldsUpdated={handleFieldsUpdated}
+        />
       </section>
 
       <section className="lg:w-1/3">
@@ -112,7 +128,9 @@ export default function DocumentApp({ spec, templates }: DocumentAppProps) {
             standard, free to use under CC BY 4.0.
           </p>
         </header>
-        <DocumentForm spec={spec} values={values} onChange={setValues} />
+        <div className="max-h-[calc(100vh-10rem)] overflow-y-auto rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+          <DocumentForm spec={spec} values={values} onChange={setValues} scrollTo={scrollToField} />
+        </div>
       </section>
 
       <section className="lg:w-1/3">

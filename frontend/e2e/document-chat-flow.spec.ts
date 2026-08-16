@@ -33,6 +33,29 @@ test.describe("Mutual NDA chat", () => {
     await expect(page.locator(".legal-document")).toContainText("Governing Law: Delaware");
   });
 
+  test("scrolls the Key Terms column to a field the AI fills in further down the form", async ({ page }) => {
+    // "Jurisdiction" is near the bottom of the Mutual NDA's Key Terms list,
+    // below the fold in the column's own scrollbar -- see DocumentApp.tsx's
+    // handleFieldsUpdated and DocumentForm.tsx's scrollTo.
+    const jurisdictionField = page.getByLabel("Jurisdiction", { exact: false });
+    await expect(jurisdictionField).not.toBeInViewport();
+
+    await page.route("**/api/documents/mutual-nda/chat", async (route) => {
+      await route.fulfill({
+        json: {
+          reply: "Set the jurisdiction to Delaware courts.",
+          updates: { jurisdiction: "courts located in New Castle, DE" },
+        },
+      });
+    });
+
+    await page.getByLabel("Message").fill("Jurisdiction should be Delaware courts");
+    await page.getByRole("button", { name: "Send" }).click();
+
+    await expect(jurisdictionField).toHaveValue("courts located in New Castle, DE");
+    await expect(jurisdictionField).toBeInViewport();
+  });
+
   test("does not scroll the page back up when sending a message from a scrolled-down position", async ({ page }) => {
     // Regression test: early in a conversation the chat panel's own fixed
     // height + scrollbar isn't yet filled by its few short messages, which
