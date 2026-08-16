@@ -6,7 +6,7 @@ import DocumentChatPanel from "./DocumentChatPanel";
 import DocumentForm, { type ScrollToFieldRequest } from "./DocumentForm";
 import DocumentPreview from "./DocumentPreview";
 import { getSavedDocument, saveDocument } from "@/lib/api";
-import type { DocumentFieldUpdates } from "@/lib/document-chat";
+import { isMeaningfulFieldUpdate, type DocumentFieldUpdates } from "@/lib/document-chat";
 import { defaultFormValues, getPartyValue, type DocumentFormValues } from "@/lib/document-form";
 import { renderDocument, type DocumentTemplates } from "@/lib/render-document";
 import { slugify } from "@/lib/slugify";
@@ -29,7 +29,7 @@ export default function DocumentApp({ spec, templates }: DocumentAppProps) {
   // reply actually filled in -- otherwise a field below the fold updates
   // out of sight, in a column that now scrolls independently of the page.
   function handleFieldsUpdated(updates: DocumentFieldUpdates) {
-    const key = Object.keys(updates).find((k) => updates[k]);
+    const key = Object.keys(updates).find((k) => isMeaningfulFieldUpdate(updates[k]));
     if (!key) return;
     setScrollToField((current) => ({ key, nonce: (current?.nonce ?? 0) + 1 }));
   }

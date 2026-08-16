@@ -103,6 +103,32 @@ describe("DocumentApp", () => {
     expect(scrollIntoViewMock).toHaveBeenCalledWith({ block: "center", behavior: "smooth" });
   });
 
+  it("does not scroll when a reply asks a clarifying question without filling anything in", async () => {
+    // Regression test reproducing a real bug: the LLM's structured output
+    // can return a party's full shape with every subfield left "" on a turn
+    // that filled nothing (e.g. it's still asking the user for the
+    // effective date). That party object is truthy on its own, so a naive
+    // "was some key in updates truthy" check picked it as "the updated
+    // field" and scrolled to Party 1 -- nowhere near the field the AI
+    // actually asked about.
+    vi.mocked(postDocumentChatTurn).mockResolvedValueOnce({
+      reply: "Sure! Please provide the effective date (format: yyyy-mm-dd). What's the Effective Date?",
+      updates: { party1: { printName: "", title: "", company: "", noticeAddress: "" } },
+    });
+    const scrollIntoViewMock = Element.prototype.scrollIntoView as ReturnType<typeof vi.fn>;
+    scrollIntoViewMock.mockClear();
+    const user = userEvent.setup();
+    render(<DocumentApp spec={ndaSpec} templates={ndaTemplates} />);
+
+    await user.type(screen.getByLabelText("Message"), "Effective Date");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    await waitFor(() =>
+      expect(screen.getByText(/What's the Effective Date\?/)).toBeInTheDocument()
+    );
+    expect(scrollIntoViewMock).not.toHaveBeenCalled();
+  });
+
   it("attempts PDF generation even when every field is left blank", async () => {
     html2pdfWorker.save.mockResolvedValue(undefined);
     const user = userEvent.setup();

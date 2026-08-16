@@ -3,4 +3,4 @@
  * (see VersionBadge component) shows which change is actually live in the
  * browser -- see the CLAUDE.md "Frontend version badge" section.
  */
-export const APP_VERSION = "v.formscrolltofield";
+export const APP_VERSION = "v.scrolltofieldfix";
