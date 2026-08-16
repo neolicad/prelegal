@@ -33,6 +33,31 @@ test.describe("Mutual NDA chat", () => {
     await expect(page.locator(".legal-document")).toContainText("Governing Law: Delaware");
   });
 
+  test("does not scroll the page back up when sending a message from a scrolled-down position", async ({ page }) => {
+    // Regression test: early in a conversation the chat panel's own fixed
+    // height + scrollbar isn't yet filled by its few short messages, which
+    // previously made the auto-scroll fall back to scrolling the whole page
+    // -- visibly snapping it back up past wherever the user had scrolled
+    // down to reach the input box below the panel.
+    await page.route("**/api/documents/mutual-nda/chat", async (route) => {
+      await route.fulfill({ json: { reply: "Got it, thanks!", updates: {} } });
+    });
+
+    // window.scrollBy rather than page.mouse.wheel: the cursor's default
+    // position can land over the chat panel's own internal scrollbar, which
+    // would consume the wheel scroll itself rather than scrolling the page.
+    await page.evaluate(() => window.scrollBy(0, 400));
+    const scrollYBeforeSend = await page.evaluate(() => window.scrollY);
+    expect(scrollYBeforeSend).toBeGreaterThan(0);
+
+    await page.getByLabel("Message").fill("Hello");
+    await page.getByRole("button", { name: "Send" }).click();
+    await expect(page.getByText("Got it, thanks!")).toBeVisible();
+
+    const scrollYAfterSend = await page.evaluate(() => window.scrollY);
+    expect(scrollYAfterSend).toBeGreaterThanOrEqual(scrollYBeforeSend);
+  });
+
   test("shows an error message when the chat request fails", async ({ page }) => {
     await page.route("**/api/documents/mutual-nda/chat", async (route) => {
       await route.fulfill({ status: 502, json: { detail: "AI unavailable" } });

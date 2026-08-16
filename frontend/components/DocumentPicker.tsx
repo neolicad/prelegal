@@ -64,7 +64,7 @@ export default function DocumentPicker({ documentTypes }: DocumentPickerProps) {
       </header>
 
       <section className="flex flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-        <ChatMessageList messages={messages} isSending={isSending} className="" />
+        <ChatMessageList messages={messages} isSending={isSending} className="" bounded={false} />
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
         <ChatInputForm
           value={input}
