@@ -1,4 +1,4 @@
-"""Pydantic models shared by the document chat endpoints.
+"""Pydantic request models shared by the document chat, auth, and document routers.
 
 `values`/`updates` are typed loosely here (plain dicts) because their exact
 shape depends on which document type's fields and parties are involved --
@@ -25,3 +25,18 @@ class ChatTurnRequest(BaseModel):
 class MatchRequest(BaseModel):
     message: str
     history: list[ChatMessage] = []
+
+
+class SignupRequest(BaseModel):
+    email: str
+    password: str
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class SaveDocumentRequest(BaseModel):
+    slug: str
+    values: dict[str, Any] = {}

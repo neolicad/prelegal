@@ -17,7 +17,11 @@ from app.schemas import ChatTurnRequest
 logger = logging.getLogger(__name__)
 
 MODEL = "openrouter/openai/gpt-oss-120b"
-EXTRA_BODY = {"provider": {"order": ["cerebras"]}}
+# allow_fallbacks: False -- `order` alone is only a preference: OpenRouter
+# will otherwise silently fall back to a different provider hosting the same
+# model (observed: CoreWeave) once Cerebras is briefly unavailable, rather
+# than erroring, which defeats requiring Cerebras as the inference provider.
+EXTRA_BODY = {"provider": {"order": ["cerebras"], "allow_fallbacks": False}}
 
 SYSTEM_PROMPT_TEMPLATE = """You are helping a user fill in a {document_name} through conversation. \
 Ask about one missing field at a time, in a friendly, concise way.

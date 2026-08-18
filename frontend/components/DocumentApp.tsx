@@ -1,12 +1,16 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Button from "./Button";
 import DocumentChatPanel from "./DocumentChatPanel";
-import DocumentForm from "./DocumentForm";
+import DocumentForm, { type ScrollToFieldRequest } from "./DocumentForm";
 import DocumentPreview from "./DocumentPreview";
+import { getSavedDocument, saveDocument } from "@/lib/api";
+import { isMeaningfulFieldUpdate, type DocumentFieldUpdates } from "@/lib/document-chat";
 import { defaultFormValues, getPartyValue, type DocumentFormValues } from "@/lib/document-form";
 import { renderDocument, type DocumentTemplates } from "@/lib/render-document";
 import { slugify } from "@/lib/slugify";
+import { errorTextClass } from "@/lib/ui";
 import type { DocumentTypeSpec } from "@/lib/document-types";
 
 interface DocumentAppProps {
@@ -18,7 +22,35 @@ export default function DocumentApp({ spec, templates }: DocumentAppProps) {
   const [values, setValues] = useState<DocumentFormValues>(() => defaultFormValues(spec));
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [scrollToField, setScrollToField] = useState<ScrollToFieldRequest | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+
+  // Scrolls the Key Terms column to whichever field/party the AI's last
+  // reply actually filled in -- otherwise a field below the fold updates
+  // out of sight, in a column that now scrolls independently of the page.
+  function handleFieldsUpdated(updates: DocumentFieldUpdates) {
+    const key = Object.keys(updates).find((k) => isMeaningfulFieldUpdate(updates[k]));
+    if (!key) return;
+    setScrollToField((current) => ({ key, nonce: (current?.nonce ?? 0) + 1 }));
+  }
+
+  // Resuming a saved document (see MyDocuments.tsx) passes its id via a query
+  // param rather than a dynamic route segment, since this page is statically
+  // exported per-slug at build time with no per-document id known yet.
+  useEffect(() => {
+    const documentId = new URLSearchParams(window.location.search).get("documentId");
+    if (!documentId) return;
+    getSavedDocument(Number(documentId))
+      .then((saved) => {
+        if (saved.slug === spec.slug) setValues(saved.values);
+      })
+      .catch(() => {
+        // Not this user's document, or it no longer exists -- start fresh.
+      });
+    // Only ever read on mount: this pre-fills the initial edit, it shouldn't
+    // re-run and clobber in-progress edits on later renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const documentMarkdown = useMemo(
     () => renderDocument(spec, templates, values),
@@ -30,6 +62,17 @@ export default function DocumentApp({ spec, templates }: DocumentAppProps) {
 
     setIsDownloading(true);
     setDownloadError(null);
+
+    // Saving is best-effort and shouldn't block the download the user asked
+    // for -- kept as its own try/catch, separate from PDF generation below,
+    // so a save failure surfaces via downloadError without skipping it.
+    try {
+      await saveDocument(spec.slug, values);
+    } catch (error) {
+      console.error("Failed to save document to history", error);
+      setDownloadError("Downloaded, but couldn't save this document to My Documents.");
+    }
+
     try {
       const html2pdf = (await import("html2pdf.js")).default;
       const partySlugs = spec.parties.map((party) => slugify(getPartyValue(values, party.key).company));
@@ -56,13 +99,18 @@ export default function DocumentApp({ spec, templates }: DocumentAppProps) {
     <div className="mx-auto flex min-h-screen max-w-[110rem] flex-col gap-8 px-4 py-8 lg:flex-row lg:px-8">
       <section className="lg:w-1/3">
         <header className="mb-6">
-          <h1 className="text-2xl font-semibold text-neutral-900">{spec.name} Creator</h1>
+          <h1 className="text-2xl font-semibold text-brand-navy">{spec.name} Creator</h1>
           <p className="mt-2 text-sm text-neutral-600">
             Chat with the assistant, or fill in the form — either fills in the document on the right
             as you go.
           </p>
         </header>
-        <DocumentChatPanel spec={spec} values={values} onValuesChange={setValues} />
+        <DocumentChatPanel
+          spec={spec}
+          values={values}
+          onValuesChange={setValues}
+          onFieldsUpdated={handleFieldsUpdated}
+        />
       </section>
 
       <section className="lg:w-1/3">
@@ -80,22 +128,26 @@ export default function DocumentApp({ spec, templates }: DocumentAppProps) {
             standard, free to use under CC BY 4.0.
           </p>
         </header>
-        <DocumentForm spec={spec} values={values} onChange={setValues} />
+        <div className="max-h-[calc(100vh-10rem)] overflow-y-auto rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+          <DocumentForm spec={spec} values={values} onChange={setValues} scrollTo={scrollToField} />
+        </div>
       </section>
 
       <section className="lg:w-1/3">
         <div className="flex flex-col gap-4 lg:sticky lg:top-8">
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={handleDownload}
-              disabled={isDownloading}
-              className="self-start rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
+            <Button type="button" onClick={() => void handleDownload()} disabled={isDownloading} className="self-start">
               {isDownloading ? "Preparing PDF…" : "Download PDF"}
-            </button>
-            {downloadError ? <p className="text-sm text-red-600">{downloadError}</p> : null}
+            </Button>
+            {downloadError ? <p className={errorTextClass}>{downloadError}</p> : null}
           </div>
+          <p className="text-xs text-brand-gray">
+            This is a draft only. Downloading also saves it to{" "}
+            <a href="/my-documents" className="underline hover:text-brand-navy">
+              My Documents
+            </a>
+            .
+          </p>
           <DocumentPreview ref={previewRef} markdown={documentMarkdown} />
         </div>
       </section>

@@ -7,7 +7,7 @@ import { APP_VERSION } from "@/lib/version";
  */
 export default function VersionBadge() {
   return (
-    <span className="fixed top-2 right-2 z-50 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[10px] text-neutral-500 shadow-sm">
+    <span className="pointer-events-none fixed top-2 right-2 z-50 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[10px] text-neutral-500 shadow-sm">
       {APP_VERSION}
     </span>
   );

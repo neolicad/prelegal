@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeDocumentFieldUpdates } from "./document-chat";
+import { isMeaningfulFieldUpdate, mergeDocumentFieldUpdates } from "./document-chat";
 import { defaultFormValues, getFieldValue, getPartyValue } from "./document-form";
 import { loadDocumentTypeFixture } from "./test-support/load-document-type";
 
@@ -62,5 +62,31 @@ describe("mergeDocumentFieldUpdates", () => {
     mergeDocumentFieldUpdates(spec, values, { governingLaw: "Delaware" });
 
     expect(getFieldValue(values, "governingLaw")).toBe("");
+  });
+});
+
+describe("isMeaningfulFieldUpdate", () => {
+  it("is true for a non-empty string", () => {
+    expect(isMeaningfulFieldUpdate("Delaware")).toBe(true);
+  });
+
+  it("is false for an empty string, null, or undefined", () => {
+    expect(isMeaningfulFieldUpdate("")).toBe(false);
+    expect(isMeaningfulFieldUpdate(null)).toBe(false);
+    expect(isMeaningfulFieldUpdate(undefined)).toBe(false);
+  });
+
+  it("is true for a party update with at least one non-empty subfield", () => {
+    expect(isMeaningfulFieldUpdate({ company: "Acme" })).toBe(true);
+  });
+
+  it("is false for a party update object whose every subfield is empty", () => {
+    // Regression test: a party update is an object, so it's truthy on its
+    // own even when nothing in it actually changed -- e.g. the LLM
+    // returning the full party shape with every field left "" on a turn
+    // that filled nothing. A naive `if (updates[key])` check (as
+    // DocumentApp.tsx's scroll-to-field trigger once did) would otherwise
+    // treat this as "the party was updated" and scroll to it regardless.
+    expect(isMeaningfulFieldUpdate({ printName: "", title: "", company: "", noticeAddress: "" })).toBe(false);
   });
 });

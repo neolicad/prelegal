@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import { PDFParse } from "pdf-parse";
+import { signUpNewUser } from "./helpers";
 
 test("redirects to the login screen when not signed in", async ({ page }) => {
   await page.goto("/");
@@ -11,12 +12,7 @@ test("redirects to the login screen when not signed in", async ({ page }) => {
 
 test.describe("Mutual NDA creator", () => {
   test.beforeEach(async ({ page }) => {
-    // No real authentication yet -- any credentials sign you in (PL-7).
-    await page.goto("/login");
-    await page.getByLabel("Email").fill("alice@example.com");
-    await page.getByLabel("Password").fill("hunter2");
-    await page.getByRole("button", { name: "Sign in" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "What do you need to create?" })).toBeVisible();
+    await signUpNewUser(page);
 
     await page.getByRole("link", { name: /Mutual Non-Disclosure Agreement/ }).click();
     await expect(
@@ -103,10 +99,7 @@ test.describe("Mutual NDA creator", () => {
 
 test.describe("Cloud Service Agreement creator (generic-keyterms renderer)", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/login");
-    await page.getByLabel("Email").fill("alice@example.com");
-    await page.getByLabel("Password").fill("hunter2");
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await signUpNewUser(page);
     await page.getByRole("link", { name: /^Cloud Service Agreement/ }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Cloud Service Agreement Creator" })).toBeVisible();
   });

@@ -1,11 +1,13 @@
 import { createRef, useState } from "react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import DocumentForm from "./DocumentForm";
+import DocumentForm, { type ScrollToFieldRequest } from "./DocumentForm";
 import { defaultFormValues, getFieldValue, getPartyValue, type DocumentFormValues } from "@/lib/document-form";
 import type { DocumentTypeSpec } from "@/lib/document-types";
 import { loadDocumentTypeFixture } from "@/lib/test-support/load-document-type";
+
+const scrollIntoViewMock = Element.prototype.scrollIntoView as ReturnType<typeof vi.fn>;
 
 const { spec: ndaSpec } = loadDocumentTypeFixture("mutual-nda");
 const { spec: csaSpec } = loadDocumentTypeFixture("csa");
@@ -98,5 +100,60 @@ describe("DocumentForm", () => {
     const ref = createRef<HTMLFormElement>();
     render(<ControlledDocumentForm spec={ndaSpec} ref={ref} />);
     expect(ref.current).toBeInstanceOf(HTMLFormElement);
+  });
+
+  describe("scrollTo", () => {
+    beforeEach(() => {
+      scrollIntoViewMock.mockClear();
+    });
+
+    it("scrolls a plain field into view when targeted", () => {
+      const values = defaultFormValues(csaSpec);
+      const { rerender } = render(
+        <DocumentForm spec={csaSpec} values={values} onChange={() => {}} scrollTo={null} />
+      );
+      expect(scrollIntoViewMock).not.toHaveBeenCalled();
+
+      const request: ScrollToFieldRequest = { key: "governingLaw", nonce: 1 };
+      rerender(<DocumentForm spec={csaSpec} values={values} onChange={() => {}} scrollTo={request} />);
+
+      expect(screen.getByLabelText("Governing Law", { exact: false }).closest("label")).toBe(
+        document.getElementById("field-governingLaw")
+      );
+      expect(scrollIntoViewMock).toHaveBeenCalledWith({ block: "center", behavior: "smooth" });
+    });
+
+    it("scrolls a party's whole section into view when a party field is targeted", () => {
+      const values = defaultFormValues(csaSpec);
+      const { rerender } = render(
+        <DocumentForm spec={csaSpec} values={values} onChange={() => {}} scrollTo={null} />
+      );
+
+      const request: ScrollToFieldRequest = { key: "customer", nonce: 1 };
+      rerender(<DocumentForm spec={csaSpec} values={values} onChange={() => {}} scrollTo={request} />);
+
+      expect(screen.getByText("Customer").closest("fieldset")).toBe(document.getElementById("field-customer"));
+      expect(scrollIntoViewMock).toHaveBeenCalledWith({ block: "center", behavior: "smooth" });
+    });
+
+    it("re-scrolls when the same field is targeted again (nonce bump)", () => {
+      const values = defaultFormValues(csaSpec);
+      const request: ScrollToFieldRequest = { key: "governingLaw", nonce: 1 };
+      const { rerender } = render(
+        <DocumentForm spec={csaSpec} values={values} onChange={() => {}} scrollTo={request} />
+      );
+      expect(scrollIntoViewMock).toHaveBeenCalledTimes(1);
+
+      rerender(
+        <DocumentForm
+          spec={csaSpec}
+          values={values}
+          onChange={() => {}}
+          scrollTo={{ key: "governingLaw", nonce: 2 }}
+        />
+      );
+
+      expect(scrollIntoViewMock).toHaveBeenCalledTimes(2);
+    });
   });
 });

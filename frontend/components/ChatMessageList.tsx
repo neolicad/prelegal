@@ -8,10 +8,19 @@ interface ChatMessageListProps {
   messages: ChatMessage[];
   isSending: boolean;
   className: string;
+  // Whether `className` gives this list its own fixed height + internal
+  // scrollbar (e.g. the document chat panel) vs. letting it grow with the
+  // page, with no scrollbar of its own (e.g. the picker's page-level chat).
+  // Explicit rather than inferred from current scrollHeight > clientHeight:
+  // a *bounded* container that simply hasn't filled its height yet (e.g.
+  // early in a conversation) would otherwise be misread as unbounded, and
+  // fall back to scrolling the whole page -- which can visibly jump the page
+  // back up past wherever the user had scrolled to reach the input box.
+  bounded: boolean;
 }
 
 /** Renders a chat's messages and keeps the latest one scrolled into view. */
-export default function ChatMessageList({ messages, isSending, className }: ChatMessageListProps) {
+export default function ChatMessageList({ messages, isSending, className, bounded }: ChatMessageListProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -21,14 +30,13 @@ export default function ChatMessageList({ messages, isSending, className }: Chat
     if (!scrollContainer || !content) return;
 
     const scrollToBottom = () => {
-      if (scrollContainer.scrollHeight > scrollContainer.clientHeight) {
-        // The scroll container itself has internal overflow (e.g. the
-        // fixed-height document chat panel) -- scroll only it.
+      if (bounded) {
+        // Has its own fixed height + scrollbar -- scroll only it, regardless
+        // of whether it's currently filled enough to actually overflow.
         scrollContainer.scrollTop = scrollContainer.scrollHeight;
       } else {
-        // No internal overflow (e.g. the picker's page-level chat, which has
-        // no height limit of its own) -- fall back to scrolling whichever
-        // ancestor does overflow, typically the page itself.
+        // Grows with the page and has no scrollbar of its own -- fall back
+        // to scrolling whichever ancestor does overflow, typically the page.
         scrollContainer.scrollIntoView({ block: "end" });
       }
     };
@@ -48,7 +56,7 @@ export default function ChatMessageList({ messages, isSending, className }: Chat
     resizeObserver.observe(content);
     resizeObserver.observe(scrollContainer);
     return () => resizeObserver.disconnect();
-  }, [messages, isSending]);
+  }, [messages, isSending, bounded]);
 
   return (
     <div ref={scrollContainerRef} className={className}>

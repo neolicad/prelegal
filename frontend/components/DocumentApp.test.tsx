@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import DocumentApp from "./DocumentApp";
@@ -25,8 +25,12 @@ vi.mock("html2pdf.js", () => ({ default: () => html2pdfFactory() }));
 vi.mock("@/lib/api", () => ({
   postDocumentChatTurn: vi.fn().mockResolvedValue({ reply: "", updates: {} }),
   postDocumentMatchTurn: vi.fn(),
+  saveDocument: vi.fn().mockResolvedValue({ id: 1, slug: "mutual-nda", title: "Untitled", createdAt: "" }),
+  getSavedDocument: vi.fn(),
   DocumentChatApiError: class DocumentChatApiError extends Error {},
 }));
+
+const { saveDocument, getSavedDocument, postDocumentChatTurn } = await import("@/lib/api");
 
 async function fillRequiredNdaFields(user: ReturnType<typeof userEvent.setup>) {
   // userEvent.type doesn't support jsdom's <input type="date"> (there's no
@@ -53,6 +57,9 @@ describe("DocumentApp", () => {
     html2pdfWorker.from.mockClear();
     html2pdfWorker.save.mockReset();
     html2pdfFactory.mockClear();
+    vi.mocked(saveDocument).mockClear();
+    vi.mocked(saveDocument).mockResolvedValue({ id: 1, slug: "mutual-nda", title: "Untitled", createdAt: "" });
+    vi.mocked(getSavedDocument).mockReset();
   });
 
   it("renders the form and a live preview of the default document", () => {
@@ -77,6 +84,49 @@ describe("DocumentApp", () => {
     // The form's own "Key Terms" fieldset legend also matches this text, so
     // scope to the rendered preview's heading specifically.
     expect(screen.getByRole("heading", { name: "Key Terms" })).toBeInTheDocument();
+  });
+
+  it("scrolls the Key Terms column to a field once the AI's reply fills it in", async () => {
+    vi.mocked(postDocumentChatTurn).mockResolvedValueOnce({
+      reply: "Got it — governing law is Delaware.",
+      updates: { governingLaw: "Delaware" },
+    });
+    const scrollIntoViewMock = Element.prototype.scrollIntoView as ReturnType<typeof vi.fn>;
+    scrollIntoViewMock.mockClear();
+    const user = userEvent.setup();
+    render(<DocumentApp spec={ndaSpec} templates={ndaTemplates} />);
+
+    await user.type(screen.getByLabelText("Message"), "Governing law is Delaware");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    await waitFor(() => expect(screen.getByLabelText("Governing Law", { exact: false })).toHaveValue("Delaware"));
+    expect(scrollIntoViewMock).toHaveBeenCalledWith({ block: "center", behavior: "smooth" });
+  });
+
+  it("does not scroll when a reply asks a clarifying question without filling anything in", async () => {
+    // Regression test reproducing a real bug: the LLM's structured output
+    // can return a party's full shape with every subfield left "" on a turn
+    // that filled nothing (e.g. it's still asking the user for the
+    // effective date). That party object is truthy on its own, so a naive
+    // "was some key in updates truthy" check picked it as "the updated
+    // field" and scrolled to Party 1 -- nowhere near the field the AI
+    // actually asked about.
+    vi.mocked(postDocumentChatTurn).mockResolvedValueOnce({
+      reply: "Sure! Please provide the effective date (format: yyyy-mm-dd). What's the Effective Date?",
+      updates: { party1: { printName: "", title: "", company: "", noticeAddress: "" } },
+    });
+    const scrollIntoViewMock = Element.prototype.scrollIntoView as ReturnType<typeof vi.fn>;
+    scrollIntoViewMock.mockClear();
+    const user = userEvent.setup();
+    render(<DocumentApp spec={ndaSpec} templates={ndaTemplates} />);
+
+    await user.type(screen.getByLabelText("Message"), "Effective Date");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    await waitFor(() =>
+      expect(screen.getByText(/What's the Effective Date\?/)).toBeInTheDocument()
+    );
+    expect(scrollIntoViewMock).not.toHaveBeenCalled();
   });
 
   it("attempts PDF generation even when every field is left blank", async () => {
@@ -140,5 +190,73 @@ describe("DocumentApp", () => {
       await screen.findByText("Something went wrong generating the PDF. Please try again.")
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Download PDF" })).toBeEnabled();
+  });
+
+  it("saves the document to history when Download PDF is clicked", async () => {
+    html2pdfWorker.save.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(<DocumentApp spec={ndaSpec} templates={ndaTemplates} />);
+
+    await user.type(screen.getByLabelText("Governing Law", { exact: false }), "Delaware");
+    await user.click(screen.getByRole("button", { name: "Download PDF" }));
+
+    await waitFor(() => expect(html2pdfWorker.save).toHaveBeenCalled());
+    expect(saveDocument).toHaveBeenCalledWith(
+      "mutual-nda",
+      expect.objectContaining({ governingLaw: "Delaware" })
+    );
+  });
+
+  it("still downloads the PDF, with a warning, when saving to history fails", async () => {
+    html2pdfWorker.save.mockResolvedValue(undefined);
+    vi.mocked(saveDocument).mockRejectedValue(new Error("network error"));
+    const user = userEvent.setup();
+    render(<DocumentApp spec={ndaSpec} templates={ndaTemplates} />);
+
+    await user.click(screen.getByRole("button", { name: "Download PDF" }));
+
+    await waitFor(() => expect(html2pdfWorker.save).toHaveBeenCalled());
+    expect(
+      await screen.findByText("Downloaded, but couldn't save this document to My Documents.")
+    ).toBeInTheDocument();
+  });
+
+  describe("resuming a saved document", () => {
+    const originalSearch = window.location.search;
+
+    afterEach(() => {
+      window.history.replaceState(null, "", `/${originalSearch}`);
+    });
+
+    it("pre-fills the form from a saved document matching this slug's ?documentId", async () => {
+      window.history.replaceState(null, "", "/?documentId=42");
+      vi.mocked(getSavedDocument).mockResolvedValue({
+        id: 42,
+        slug: "mutual-nda",
+        title: "Acme Inc. — Mutual NDA",
+        createdAt: "",
+        values: { ...ndaSpec.fields.reduce((acc, f) => ({ ...acc, [f.key]: "" }), {}), governingLaw: "Delaware" },
+      });
+
+      render(<DocumentApp spec={ndaSpec} templates={ndaTemplates} />);
+
+      expect(await screen.findByText("Governing Law: Delaware")).toBeInTheDocument();
+    });
+
+    it("ignores a saved document for a different slug", async () => {
+      window.history.replaceState(null, "", "/?documentId=42");
+      vi.mocked(getSavedDocument).mockResolvedValue({
+        id: 42,
+        slug: "csa",
+        title: "Some CSA",
+        createdAt: "",
+        values: {},
+      });
+
+      render(<DocumentApp spec={ndaSpec} templates={ndaTemplates} />);
+
+      await waitFor(() => expect(getSavedDocument).toHaveBeenCalled());
+      expect(screen.getByLabelText("Governing Law", { exact: false })).toHaveValue("");
+    });
   });
 });

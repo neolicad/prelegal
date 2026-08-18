@@ -24,6 +24,20 @@ function mergeParty(current: PartyInfo, updates: PartyInfoUpdates | null | undef
 }
 
 /**
+ * Whether a field's update value actually changes anything. A plain string
+ * update is meaningful iff non-empty; a party update is an object and so is
+ * always truthy on its own (e.g. `{printName: "", title: "", ...}`) even
+ * when every subfield in it is empty -- checked the same subfield-by-
+ * subfield way `mergeParty` above does, so "was this key updated" agrees
+ * with "did merging it change anything".
+ */
+export function isMeaningfulFieldUpdate(update: string | PartyInfoUpdates | null | undefined): boolean {
+  if (!update) return false;
+  if (typeof update === "string") return true;
+  return Object.values(update).some((value) => !!value);
+}
+
+/**
  * Merges the AI's field updates into the current form values.
  *
  * Null/undefined/empty-string fields mean "no update" (the AI wasn't

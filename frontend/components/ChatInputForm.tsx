@@ -1,3 +1,6 @@
+import Button from "./Button";
+import { inputClass } from "@/lib/ui";
+
 interface ChatInputFormProps {
   value: string;
   onChange: (value: string) => void;
@@ -28,16 +31,12 @@ export default function ChatInputForm({ value, onChange, onSubmit, isSending, pl
               onSubmit();
             }
           }}
-          className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 shadow-sm focus:border-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-500"
+          className={inputClass}
         />
       </label>
-      <button
-        type="submit"
-        disabled={isSending || !value.trim()}
-        className="shrink-0 rounded-md bg-[#753991] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-      >
+      <Button type="submit" disabled={isSending || !value.trim()} className="shrink-0">
         Send
-      </button>
+      </Button>
     </form>
   );
 }

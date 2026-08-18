@@ -23,14 +23,14 @@ describe("ChatMessageList", () => {
       { role: "assistant", content: "Hi there" },
       { role: "user", content: "Hello" },
     ];
-    render(<ChatMessageList messages={messages} isSending={false} className="" />);
+    render(<ChatMessageList messages={messages} isSending={false} className="" bounded={false} />);
 
     expect(screen.getByText("Hi there")).toBeInTheDocument();
     expect(screen.getByText("Hello")).toBeInTheDocument();
   });
 
   it("shows a Thinking… bubble while a request is in flight", () => {
-    render(<ChatMessageList messages={[]} isSending={true} className="" />);
+    render(<ChatMessageList messages={[]} isSending={true} className="" bounded={false} />);
 
     expect(screen.getByText("Thinking…")).toBeInTheDocument();
   });
@@ -43,7 +43,7 @@ describe("ChatMessageList", () => {
           <button onClick={() => setMessages((current) => [...current, { role: "user", content: "More" }])}>
             Add message
           </button>
-          <ChatMessageList messages={messages} isSending={false} className="" />
+          <ChatMessageList messages={messages} isSending={false} className="" bounded={false} />
         </>
       );
     }
@@ -62,7 +62,7 @@ describe("ChatMessageList", () => {
       return (
         <>
           <button onClick={() => setIsSending(true)}>Start sending</button>
-          <ChatMessageList messages={[]} isSending={isSending} className="" />
+          <ChatMessageList messages={[]} isSending={isSending} className="" bounded={false} />
         </>
       );
     }
@@ -75,19 +75,59 @@ describe("ChatMessageList", () => {
     expect(scrollIntoViewMock).toHaveBeenCalledTimes(1);
   });
 
-  describe("when the scroll container has real internal overflow", () => {
-    it("sets scrollTop directly instead of calling scrollIntoView", () => {
+  describe("bounded (e.g. the document chat panel, which has its own fixed height + scrollbar)", () => {
+    it("sets scrollTop directly instead of calling scrollIntoView, even without real internal overflow yet", () => {
+      // Regression test: a bounded container that hasn't filled its height
+      // yet (scrollHeight <= clientHeight, e.g. early in a short
+      // conversation) must still scroll only itself -- inferring "unbounded"
+      // from that state previously fell back to scrolling the whole page,
+      // which could visibly snap the page back up past wherever the user
+      // had scrolled to reach the input box below the panel.
       const { container } = render(
-        <ChatMessageList messages={[{ role: "assistant", content: "Hi" }]} isSending={false} className="" />
+        <ChatMessageList messages={[{ role: "assistant", content: "Hi" }]} isSending={false} className="" bounded />
+      );
+      const scrollContainer = container.firstElementChild as HTMLElement;
+      mockOverflow(scrollContainer, { scrollHeight: 150, clientHeight: 200 }); // not overflowing
+      scrollIntoViewMock.mockClear(); // isolate from the initial mount's own scroll
+
+      triggerLatestResize();
+
+      expect(scrollContainer.scrollTop).toBe(150);
+      expect(scrollIntoViewMock).not.toHaveBeenCalled();
+    });
+
+    it("still sets scrollTop directly once content does overflow", () => {
+      const { container } = render(
+        <ChatMessageList messages={[{ role: "assistant", content: "Hi" }]} isSending={false} className="" bounded />
       );
       const scrollContainer = container.firstElementChild as HTMLElement;
       mockOverflow(scrollContainer, { scrollHeight: 500, clientHeight: 200 });
-      scrollIntoViewMock.mockClear(); // isolate from the initial mount's own scroll
+      scrollIntoViewMock.mockClear();
 
       triggerLatestResize();
 
       expect(scrollContainer.scrollTop).toBe(500);
       expect(scrollIntoViewMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("unbounded (e.g. the picker's page-level chat, with no height limit of its own)", () => {
+    it("calls scrollIntoView on the container instead of setting scrollTop", () => {
+      const { container } = render(
+        <ChatMessageList
+          messages={[{ role: "assistant", content: "Hi" }]}
+          isSending={false}
+          className=""
+          bounded={false}
+        />
+      );
+      const scrollContainer = container.firstElementChild as HTMLElement;
+      mockOverflow(scrollContainer, { scrollHeight: 200, clientHeight: 200 });
+      scrollIntoViewMock.mockClear();
+
+      triggerLatestResize();
+
+      expect(scrollIntoViewMock).toHaveBeenCalledWith({ block: "end" });
     });
   });
 
@@ -99,7 +139,7 @@ describe("ChatMessageList", () => {
     // scrollTop stale with the true bottom well out of view.
     it("re-scrolls when the ResizeObserver fires again for the same render", () => {
       const { container } = render(
-        <ChatMessageList messages={[{ role: "assistant", content: "Hi" }]} isSending={false} className="" />
+        <ChatMessageList messages={[{ role: "assistant", content: "Hi" }]} isSending={false} className="" bounded />
       );
       const scrollContainer = container.firstElementChild as HTMLElement;
       mockOverflow(scrollContainer, { scrollHeight: 300, clientHeight: 200 });

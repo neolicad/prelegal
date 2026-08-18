@@ -4,7 +4,7 @@ import { useState, type Dispatch, type SetStateAction } from "react";
 import ChatInputForm from "./ChatInputForm";
 import ChatMessageList from "./ChatMessageList";
 import { postDocumentChatTurn, DocumentChatApiError } from "@/lib/api";
-import { mergeDocumentFieldUpdates, type ChatMessage } from "@/lib/document-chat";
+import { mergeDocumentFieldUpdates, type ChatMessage, type DocumentFieldUpdates } from "@/lib/document-chat";
 import type { DocumentFormValues } from "@/lib/document-form";
 import type { DocumentTypeSpec } from "@/lib/document-types";
 
@@ -12,9 +12,12 @@ interface DocumentChatPanelProps {
   spec: DocumentTypeSpec;
   values: DocumentFormValues;
   onValuesChange: Dispatch<SetStateAction<DocumentFormValues>>;
+  // Called with each turn's raw field updates (e.g. so the form column can
+  // scroll to whichever field the AI just filled in -- see DocumentApp.tsx).
+  onFieldsUpdated?: (updates: DocumentFieldUpdates) => void;
 }
 
-export default function DocumentChatPanel({ spec, values, onValuesChange }: DocumentChatPanelProps) {
+export default function DocumentChatPanel({ spec, values, onValuesChange, onFieldsUpdated }: DocumentChatPanelProps) {
   const greeting: ChatMessage = {
     role: "assistant",
     content: `Hi! I can help you fill in this ${spec.name}. What's the first thing you'd like to tell me?`,
@@ -42,6 +45,7 @@ export default function DocumentChatPanel({ spec, values, onValuesChange }: Docu
       // against the latest state (`current`) instead of that snapshot avoids
       // silently reverting those concurrent edits.
       onValuesChange((current) => mergeDocumentFieldUpdates(spec, current, updates));
+      onFieldsUpdated?.(updates);
     } catch (err) {
       setError(
         err instanceof DocumentChatApiError
@@ -59,6 +63,7 @@ export default function DocumentChatPanel({ spec, values, onValuesChange }: Docu
         messages={messages}
         isSending={isSending}
         className="flex-1 overflow-y-auto rounded-lg border border-neutral-200 bg-white p-4 shadow-sm"
+        bounded
       />
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       <ChatInputForm

@@ -47,10 +47,13 @@ describe("DocumentChatPanel", () => {
       expect.any(Array),
       values
     );
-    // Regression test: the panel must actually scroll the new messages into
-    // view, not just render them (see ChatMessageList.test.tsx for the
-    // underlying scroll-on-change behavior in isolation).
-    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+    // Regression test: the panel has its own fixed height + scrollbar, so
+    // following new messages must scroll only itself (scrollIntoView would
+    // instead scroll the whole page, which can visibly snap the page back up
+    // past wherever the user had scrolled to reach the input box below it --
+    // see ChatMessageList.test.tsx for the underlying scroll behavior in
+    // isolation, and its `bounded` prop).
+    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
   });
 
   it("merges returned field updates into the parent's values via onValuesChange", async () => {
@@ -67,6 +70,24 @@ describe("DocumentChatPanel", () => {
     // stale closure -- see DocumentChatPanel.tsx's sendMessage.
     const updater = onValuesChange.mock.calls[0][0] as (current: DocumentFormValues) => DocumentFormValues;
     expect(updater(values)).toEqual(expect.objectContaining({ governingLaw: "Delaware" }));
+  });
+
+  it("calls onFieldsUpdated with the turn's raw updates, so the form column can scroll to them", async () => {
+    postDocumentChatTurnMock.mockResolvedValue({ reply: "Noted.", updates: { governingLaw: "Delaware" } });
+    const onFieldsUpdated = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <DocumentChatPanel
+        spec={ndaSpec}
+        values={values}
+        onValuesChange={vi.fn()}
+        onFieldsUpdated={onFieldsUpdated}
+      />
+    );
+
+    await sendMessage(user, "Governing law is Delaware");
+
+    await waitFor(() => expect(onFieldsUpdated).toHaveBeenCalledWith({ governingLaw: "Delaware" }));
   });
 
   it("does not drop a concurrent manual edit made while a chat request is in flight", async () => {

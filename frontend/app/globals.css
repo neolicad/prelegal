@@ -3,11 +3,26 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Brand palette -- see CLAUDE.md's "Color Scheme". Centralized here as
+     Tailwind theme tokens (bg-brand-purple, text-brand-navy, etc.) instead
+     of components hardcoding arbitrary hex values, so the palette is applied
+     consistently rather than drifting per-component. */
+  --color-brand-yellow: #ecad0a;
+  --color-brand-blue: #209dd7;
+  --color-brand-purple: #753991;
+  --color-brand-navy: #032147;
+  --color-brand-gray: #888888;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-brand-yellow: var(--color-brand-yellow);
+  --color-brand-blue: var(--color-brand-blue);
+  --color-brand-purple: var(--color-brand-purple);
+  --color-brand-navy: var(--color-brand-navy);
+  --color-brand-gray: var(--color-brand-gray);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-document: var(--font-document);
