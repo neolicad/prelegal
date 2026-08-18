@@ -5,7 +5,7 @@ import pytest
 
 from app.document_types import get_document_type
 from app.fake_ai import FAKE_REPLY
-from app.llm import LlmError, _build_system_prompt, generate_chat_reply
+from app.llm import EXTRA_BODY, LlmError, _build_system_prompt, generate_chat_reply
 from app.schemas import ChatTurnRequest
 
 
@@ -45,6 +45,30 @@ def test_generate_chat_reply_parses_structured_output(monkeypatch, slug):
 
     assert result["reply"].startswith("Sounds good.")
     assert result["updates"][field_key] == "A new value"
+
+
+def test_generate_chat_reply_disables_provider_fallback():
+    # Regression test: `order` alone is only a preference -- OpenRouter will
+    # otherwise silently fall back to a different provider hosting the same
+    # model once Cerebras is briefly unavailable (observed: CoreWeave),
+    # rather than erroring, which defeats requiring Cerebras specifically.
+    assert EXTRA_BODY == {"provider": {"order": ["cerebras"], "allow_fallbacks": False}}
+
+
+def test_generate_chat_reply_passes_extra_body_to_completion(monkeypatch):
+    spec = get_document_type("mutual-nda")
+    fake_response = _fake_completion_response("Sounds good.", {})
+    captured_kwargs = {}
+
+    def capture_completion(**kwargs):
+        captured_kwargs.update(kwargs)
+        return fake_response
+
+    monkeypatch.setattr("app.llm.completion", capture_completion)
+
+    generate_chat_reply(spec, ChatTurnRequest(message="hello", values={}))
+
+    assert captured_kwargs["extra_body"] == EXTRA_BODY
 
 
 def test_generate_chat_reply_returns_canned_reply_without_calling_completion_when_use_fake(monkeypatch):

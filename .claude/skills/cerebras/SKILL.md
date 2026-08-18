@@ -24,7 +24,11 @@ Use code like these examples in order to use Cerebras.
 ```python
 from litellm import completion
 MODEL = "openrouter/openai/gpt-oss-120b"
-EXTRA_BODY = {"provider": {"order": ["cerebras"]}}
+# allow_fallbacks: False is required -- `order` alone is only a preference,
+# and OpenRouter will otherwise silently fall back to a different provider
+# hosting the same model once Cerebras is briefly unavailable, rather than
+# erroring, which defeats requiring Cerebras as the inference provider.
+EXTRA_BODY = {"provider": {"order": ["cerebras"], "allow_fallbacks": False}}
 ```
 
 ### Code to call via Cerebras for a text response
